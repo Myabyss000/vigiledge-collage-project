@@ -1,0 +1,3008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VigilEdge WAF - Cyber Security Operations Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/enhanced-dashboard.css">
+    <!-- Chart.js for live charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            /* Cyber Color Palette - Cool tones with professional balance */
+            --primary-bg: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 30%, #16213e 60%, #0f3460 100%);
+            --glass-bg: rgba(255, 255, 255, 0.06);
+            --glass-border: rgba(100, 200, 255, 0.2);
+            --card-bg: rgba(30, 30, 50, 0.85);
+            --sidebar-bg: rgba(20, 25, 45, 0.95);
+            
+            /* Cyber Blue Palette */
+            --cyber-blue: #00d4ff;
+            --cyber-blue-light: #40e0ff;
+            --cyber-blue-dark: #0099cc;
+            
+            /* Teal Accents */
+            --cyber-teal: #00ffa6;
+            --cyber-teal-light: #40ffb8;
+            --cyber-teal-dark: #00cc85;
+            
+            /* Purple Accents */
+            --cyber-purple: #7c3aed;
+            --cyber-purple-light: #a855f7;
+            --cyber-purple-dark: #5b21b6;
+            
+            /* Status Colors */
+            --success: #00ff87;
+            --warning: #ffb347;
+            --danger: #ff6b6b;
+            --info: #74c0fc;
+            
+            /* Text Colors */
+            --text-primary: #ffffff;
+            --text-secondary: #e1e7f5;
+            --text-muted: #94a3b8;
+            --text-accent: var(--cyber-blue);
+            
+            /* Shadows and Effects */
+            --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.15);
+            --shadow-medium: 0 8px 32px rgba(0, 0, 0, 0.25);
+            --shadow-strong: 0 16px 64px rgba(0, 0, 0, 0.4);
+            --glow-blue: 0 0 20px rgba(0, 212, 255, 0.3);
+            --glow-teal: 0 0 20px rgba(0, 255, 166, 0.3);
+            --glow-purple: 0 0 20px rgba(124, 58, 237, 0.3);
+            
+            /* Border Radius */
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--primary-bg);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(0, 212, 255, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 80% 80%, rgba(0, 255, 166, 0.06) 0%, transparent 40%),
+                radial-gradient(circle at 40% 60%, rgba(124, 58, 237, 0.04) 0%, transparent 40%);
+            pointer-events: none;
+            z-index: -2;
+        }
+
+        /* Floating particles animation */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(2px 2px at 20% 20%, rgba(0, 212, 255, 0.3), transparent),
+                radial-gradient(2px 2px at 40% 40%, rgba(0, 255, 166, 0.3), transparent),
+                radial-gradient(1px 1px at 60% 60%, rgba(124, 58, 237, 0.3), transparent),
+                radial-gradient(1px 1px at 80% 80%, rgba(0, 212, 255, 0.2), transparent);
+            background-size: 200px 200px, 150px 150px, 100px 100px, 80px 80px;
+            animation: float 20s infinite linear;
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.6;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); }
+            100% { transform: translateY(-100vh) rotate(360deg); }
+        }
+
+        /* Layout Container */
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: 100vh;
+            gap: 0;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--glass-border);
+            padding: 2rem 0;
+            position: relative;
+            overflow-y: auto;
+        }
+
+        .sidebar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 2px;
+            height: 100%;
+            background: linear-gradient(180deg, 
+                var(--cyber-blue) 0%, 
+                var(--cyber-teal) 50%, 
+                var(--cyber-purple) 100%);
+            animation: pulse-glow 3s ease-in-out infinite;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 0 1.5rem;
+        }
+
+        .logo h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--cyber-blue), var(--cyber-teal));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+        }
+
+        .logo p {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 0 1rem;
+        }
+
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: var(--radius-md);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            font-weight: 500;
+        }
+
+        .nav-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--text-primary);
+            background: rgba(0, 212, 255, 0.1);
+            box-shadow: var(--glow-blue);
+            transform: translateX(5px);
+        }
+
+        .nav-link:hover::before {
+            left: 100%;
+        }
+
+        .nav-link.active {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.15), rgba(0, 255, 166, 0.1));
+            color: var(--text-primary);
+            border: 1px solid var(--cyber-blue);
+            box-shadow: var(--glow-blue);
+        }
+
+        .nav-icon {
+            font-size: 1.25rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            padding: 2rem;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        /* ===== CYBERPUNK NEON GRID HERO SECTION ===== */
+        .quantum-hero-section {
+            position: relative;
+            height: 550px;
+            margin: -2rem -2rem 2rem -2rem;
+            overflow: hidden;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(0, 255, 255, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 0, 255, 0.05) 0%, transparent 50%),
+                linear-gradient(180deg, #000000 0%, #0a0015 50%, #000000 100%);
+            border-bottom: 3px solid #00ffff;
+            box-shadow: 
+                inset 0 0 100px rgba(0, 255, 255, 0.1),
+                0 10px 50px rgba(0, 255, 255, 0.2);
+        }
+
+        .quantum-hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 255, 255, 0.02) 2px, rgba(0, 255, 255, 0.02) 4px),
+                repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0, 255, 255, 0.02) 2px, rgba(0, 255, 255, 0.02) 4px);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .quantum-hero-section::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 50% 50%, transparent 30%, rgba(0, 255, 255, 0.03) 31%, transparent 32%),
+                radial-gradient(circle at 25% 25%, transparent 20%, rgba(255, 0, 255, 0.03) 21%, transparent 22%),
+                radial-gradient(circle at 75% 75%, transparent 20%, rgba(0, 255, 255, 0.03) 21%, transparent 22%);
+            background-size: 100px 100px, 60px 60px, 80px 80px;
+            animation: hexagon-drift 30s linear infinite;
+            pointer-events: none;
+            opacity: 0.5;
+            z-index: 1;
+        }
+
+        @keyframes hexagon-drift {
+            0% { background-position: 0 0, 0 0, 0 0; }
+            100% { background-position: 100px 100px, -60px 60px, 80px -80px; }
+        }
+        
+        /* Matrix Rain Background */
+        .matrix-rain {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.5;
+        }
+
+        .matrix-column {
+            position: absolute;
+            top: -100%;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 16px;
+            color: #00ff41;
+            text-shadow: 0 0 10px #00ff41, 0 0 20px #00ff41;
+            animation: matrix-fall linear infinite;
+            opacity: 0.7;
+            white-space: pre;
+            line-height: 1.3;
+            font-weight: 500;
+        }
+
+        @keyframes matrix-fall {
+            0% { 
+                top: -100%; 
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.7;
+            }
+            90% {
+                opacity: 0.7;
+            }
+            100% { 
+                top: 100%; 
+                opacity: 0;
+            }
+        }
+
+        /* Neon Grid Floor */
+        .neon-grid {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 350px;
+            perspective: 1200px;
+            z-index: 2;
+        }
+
+        .grid-plane {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform: rotateX(65deg) translateY(50%);
+            transform-origin: bottom center;
+            background-image: 
+                linear-gradient(rgba(0, 255, 255, 0.5) 3px, transparent 3px),
+                linear-gradient(90deg, rgba(0, 255, 255, 0.5) 3px, transparent 3px),
+                linear-gradient(rgba(0, 255, 255, 0.8) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 255, 0.8) 1px, transparent 1px),
+                linear-gradient(45deg, transparent 45%, rgba(255, 0, 255, 0.1) 45%, rgba(255, 0, 255, 0.1) 55%, transparent 55%);
+            background-size: 60px 60px, 60px 60px, 10px 10px, 10px 10px, 40px 40px;
+            background-position: 0 0;
+            animation: grid-scroll 3s linear infinite, grid-pulse 2s ease-in-out infinite;
+            filter: blur(0.3px);
+        }
+
+        @keyframes grid-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        @keyframes grid-scroll {
+            0% { background-position: 0 0, 0 0, 0 0, 0 0; }
+            100% { background-position: 0 60px, 0 60px, 0 20px, 0 20px; }
+        }
+
+        .grid-glow {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            height: 200px;
+            background: 
+                radial-gradient(ellipse at center bottom, rgba(0, 255, 255, 0.4) 0%, transparent 60%),
+                radial-gradient(ellipse at 30% bottom, rgba(255, 0, 255, 0.2) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% bottom, rgba(0, 255, 255, 0.2) 0%, transparent 50%);
+            animation: glow-pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes glow-pulse {
+            0%, 100% { 
+                opacity: 0.6;
+                transform: translateX(-50%) scale(1);
+            }
+            50% { 
+                opacity: 1;
+                transform: translateX(-50%) scale(1.05);
+            }
+        }
+
+        /* Data Stream Lines */
+        .data-stream {
+            position: absolute;
+            width: 3px;
+            height: 100%;
+            background: linear-gradient(to bottom,
+                transparent 0%,
+                rgba(0, 255, 255, 0.1) 10%,
+                rgba(0, 255, 255, 0.8) 50%,
+                rgba(255, 0, 255, 0.6) 70%,
+                rgba(0, 255, 255, 0.1) 90%,
+                transparent 100%);
+            opacity: 0.5;
+            animation: stream-flow 4s linear infinite;
+            z-index: 3;
+            filter: blur(1px);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+        }
+
+        .stream-1 { 
+            left: 15%; 
+            animation-delay: 0s;
+            animation-duration: 4s;
+        }
+        .stream-2 { 
+            left: 35%; 
+            animation-delay: 1.5s;
+            animation-duration: 5s;
+        }
+        .stream-3 { 
+            left: 65%; 
+            animation-delay: 0.8s;
+            animation-duration: 4.5s;
+        }
+        .stream-4 { 
+            left: 85%; 
+            animation-delay: 2s;
+            animation-duration: 5.5s;
+        }
+
+        @keyframes stream-flow {
+            0% { 
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.5;
+            }
+            90% {
+                opacity: 0.5;
+            }
+            100% { 
+                transform: translateY(100%);
+                opacity: 0;
+            }
+        }
+
+        /* Neon Title */
+        .neon-title {
+            position: absolute;
+            top: 45px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 3rem;
+            font-weight: 800;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 12px;
+            text-shadow: 
+                0 0 10px #00ffff,
+                0 0 20px #00ffff,
+                0 0 40px #00ffff,
+                0 0 60px rgba(0, 180, 255, 0.5);
+            z-index: 13;
+            animation: neon-flicker 2s infinite alternate;
+            font-family: 'JetBrains Mono', monospace;
+            filter: drop-shadow(0 0 15px rgba(0, 255, 255, 0.4));
+            white-space: nowrap;
+        }
+
+        @keyframes title-glitch {
+            0%, 90%, 100% {
+                transform: translateX(-50%);
+            }
+            91%, 93%, 95% {
+                transform: translateX(-50%) skewX(2deg);
+            }
+            92%, 94% {
+                transform: translateX(-50%) skewX(-2deg);
+            }
+        }
+
+        @keyframes neon-flicker {
+            0%, 18%, 22%, 25%, 53%, 57%, 100% {
+                text-shadow: 
+                    0 0 10px #00ffff,
+                    0 0 20px #00ffff,
+                    0 0 40px #00ffff,
+                    0 0 60px rgba(0, 180, 255, 0.5);
+                opacity: 1;
+            }
+            20%, 24%, 55% {
+                text-shadow: 
+                    0 0 10px #00ffff,
+                    0 0 20px #00ffff;
+                opacity: 0.9;
+            }
+        }
+
+        .subtitle {
+            position: absolute;
+            top: 115px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.95rem;
+            color: rgba(0, 200, 255, 0.9);
+            letter-spacing: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 500;
+            z-index: 12;
+            text-shadow: 0 0 8px rgba(0, 200, 255, 0.6);
+            animation: subtitle-glow 2s ease-in-out infinite;
+            padding: 6px 16px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(0, 200, 255, 0.3);
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+
+        .subtitle::before {
+            content: '> ';
+            color: #00b4ff;
+            font-weight: 700;
+        }
+
+        .subtitle::after {
+            content: '_';
+            color: #00b4ff;
+            animation: cursor-blink 1s infinite;
+            margin-left: 5px;
+        }
+
+        @keyframes cursor-blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+
+        @keyframes subtitle-glow {
+            0%, 100% { 
+                opacity: 0.9;
+                text-shadow: 0 0 8px rgba(0, 200, 255, 0.6);
+                border-color: rgba(0, 200, 255, 0.3);
+            }
+            50% { 
+                opacity: 1;
+                text-shadow: 0 0 12px rgba(0, 200, 255, 0.8);
+                border-color: rgba(0, 200, 255, 0.5);
+            }
+        }
+
+        /* Holographic Threat Visualization */
+        .holo-container {
+            position: absolute;
+            top: 210px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 700px;
+            height: 320px;
+            z-index: 5;
+            filter: drop-shadow(0 0 20px rgba(0, 255, 255, 0.4));
+        }
+
+        .holo-screen {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(135deg, rgba(0, 30, 50, 0.7) 0%, rgba(0, 15, 40, 0.7) 100%),
+                rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(20px);
+            border: 3px solid rgba(0, 200, 255, 0.5);
+            border-radius: 12px;
+            box-shadow: 
+                0 0 35px rgba(0, 200, 255, 0.4),
+                0 0 50px rgba(0, 150, 255, 0.2),
+                inset 0 0 40px rgba(0, 200, 255, 0.15),
+                inset 0 0 60px rgba(0, 150, 255, 0.08);
+            overflow: hidden;
+            animation: holo-float 6s ease-in-out infinite;
+        }
+
+        .holo-screen::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0, 255, 255, 0.03) 10px, rgba(0, 255, 255, 0.03) 20px),
+                repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(255, 0, 255, 0.02) 10px, rgba(255, 0, 255, 0.02) 20px);
+            pointer-events: none;
+            animation: circuit-flow 20s linear infinite;
+        }
+
+        @keyframes circuit-flow {
+            0% { background-position: 0 0, 0 0; }
+            100% { background-position: 40px 40px, -40px 40px; }
+        }
+
+        @keyframes holo-float {
+            0%, 100% { 
+                transform: translateY(0) rotateX(0deg);
+                border-color: rgba(0, 200, 255, 0.5);
+            }
+            25% {
+                border-color: rgba(0, 200, 255, 0.6);
+            }
+            50% { 
+                transform: translateY(-6px) rotateX(1deg);
+                border-color: rgba(0, 220, 255, 0.6);
+            }
+            75% {
+                border-color: rgba(0, 200, 255, 0.6);
+            }
+        }
+
+        .holo-scanline {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(to bottom, 
+                transparent, 
+                rgba(0, 255, 255, 0.2), 
+                rgba(0, 255, 255, 0.9), 
+                rgba(255, 0, 255, 0.6),
+                rgba(0, 255, 255, 0.2), 
+                transparent);
+            animation: scan 4s linear infinite;
+            z-index: 10;
+            filter: blur(1px);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+        }
+
+        @keyframes scan {
+            0% { 
+                top: -5%; 
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% { 
+                top: 105%; 
+                opacity: 0;
+            }
+        }
+
+        .holo-content {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            padding: 55px 40px 40px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            gap: 30px;
+        }
+
+        .holo-content::before {
+            content: 'THREAT ANALYSIS TERMINAL';
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: rgba(0, 200, 255, 0.85);
+            letter-spacing: 3px;
+            text-shadow: 0 0 8px rgba(0, 200, 255, 0.6);
+            z-index: 10;
+            border-bottom: 1px solid rgba(0, 200, 255, 0.3);
+            padding-bottom: 5px;
+            width: calc(100% - 80px);
+            text-align: center;
+        }
+
+        .holo-content::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 255, 255, 0.03) 2px, rgba(0, 255, 255, 0.03) 4px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Corner Brackets */
+        .corner-bracket {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-color: #00ffff;
+            z-index: 10;
+            animation: bracket-pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes bracket-pulse {
+            0%, 100% { 
+                border-color: #00c8ff;
+                filter: drop-shadow(0 0 5px #00c8ff);
+            }
+            50% { 
+                border-color: #00e0ff;
+                filter: drop-shadow(0 0 8px #00d0ff);
+            }
+        }
+
+        .bracket-tl {
+            top: -3px;
+            left: -3px;
+            border-top: 3px solid;
+            border-left: 3px solid;
+        }
+
+        .bracket-tr {
+            top: -3px;
+            right: -3px;
+            border-top: 3px solid;
+            border-right: 3px solid;
+        }
+
+        .bracket-bl {
+            bottom: -3px;
+            left: -3px;
+            border-bottom: 3px solid;
+            border-left: 3px solid;
+        }
+
+        .bracket-br {
+            bottom: -3px;
+            right: -3px;
+            border-bottom: 3px solid;
+            border-right: 3px solid;
+        }
+
+        /* Stats Display */
+        .cyber-stat {
+            text-align: center;
+            position: relative;
+            padding: 18px 16px;
+            background: 
+                linear-gradient(135deg, rgba(0, 20, 40, 0.6) 0%, rgba(0, 10, 30, 0.6) 100%),
+                rgba(0, 0, 0, 0.4);
+            border-radius: 8px;
+            border: 2px solid rgba(0, 200, 255, 0.3);
+            transition: all 0.3s ease;
+            z-index: 1;
+            clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+        }
+
+        .cyber-stat::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #0088ff, #00c8ff);
+            border-radius: 8px;
+            opacity: 0;
+            z-index: -1;
+            transition: opacity 0.3s ease;
+            clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+        }
+
+        .cyber-stat:hover {
+            transform: translateY(-5px) scale(1.05);
+            border-color: rgba(0, 200, 255, 0.7);
+            box-shadow: 0 0 25px rgba(0, 200, 255, 0.4);
+        }
+
+        .cyber-stat:hover::before {
+            opacity: 0.2;
+        }
+
+        .cyber-stat::after {
+            content: '◢';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            font-size: 1.5rem;
+            color: rgba(0, 255, 255, 0.3);
+            line-height: 0;
+            padding: 0 4px 4px 0;
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+            color: #00c8ff;
+            text-shadow: 
+                0 0 10px rgba(0, 200, 255, 0.8),
+                0 0 20px rgba(0, 200, 255, 0.5),
+                0 0 30px rgba(0, 200, 255, 0.3);
+            margin-bottom: 10px;
+            animation: flicker 4s infinite;
+            letter-spacing: 2px;
+            filter: drop-shadow(0 0 8px rgba(0, 200, 255, 0.5));
+            position: relative;
+        }
+
+        .stat-number.danger {
+            color: #ff4466;
+            text-shadow: 
+                0 0 10px rgba(255, 68, 102, 0.8),
+                0 0 20px rgba(255, 68, 102, 0.5),
+                0 0 30px rgba(255, 68, 102, 0.3);
+            filter: drop-shadow(0 0 8px rgba(255, 68, 102, 0.5));
+        }
+
+        .stat-number.success {
+            color: #00d4aa;
+            text-shadow: 
+                0 0 10px rgba(0, 212, 170, 0.8),
+                0 0 20px rgba(0, 212, 170, 0.5),
+                0 0 30px rgba(0, 212, 170, 0.3);
+            filter: drop-shadow(0 0 8px rgba(0, 212, 170, 0.5));
+        }
+
+        @keyframes flicker {
+            0%, 100% { 
+                opacity: 1;
+                transform: scale(1);
+            }
+            25% { 
+                opacity: 0.95;
+            }
+            50% { 
+                opacity: 0.9;
+                transform: scale(1.02);
+            }
+            75% { 
+                opacity: 0.95;
+            }
+        }
+
+        .stat-label-cyber {
+            font-size: 0.8rem;
+            color: rgba(200, 220, 255, 0.9);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            text-shadow: 0 0 5px rgba(0, 200, 255, 0.4);
+            position: relative;
+            padding-bottom: 6px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid rgba(0, 200, 255, 0.2);
+        }
+
+        @keyframes pulse-arrow {
+            0%, 100% { opacity: 0.5; transform: translateX(0); }
+            50% { opacity: 1; transform: translateX(3px); }
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { 
+                opacity: 1;
+                transform: scale(1);
+                box-shadow: 0 0 10px currentColor;
+            }
+            50% { 
+                opacity: 0.7;
+                transform: scale(1.3);
+                box-shadow: 0 0 20px currentColor;
+            }
+        }
+
+        .stat-bar-cyber {
+            width: 160px;
+            height: 8px;
+            background: 
+                linear-gradient(90deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 20, 40, 0.8) 100%);
+            margin: 12px auto 0;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 1px solid rgba(0, 255, 255, 0.4);
+            box-shadow: 
+                inset 0 0 10px rgba(0, 0, 0, 0.8),
+                0 0 10px rgba(0, 255, 255, 0.3);
+            position: relative;
+        }
+
+        .stat-bar-cyber::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(90deg, 
+                transparent, 
+                transparent 10px, 
+                rgba(0, 255, 255, 0.1) 10px, 
+                rgba(0, 255, 255, 0.1) 11px);
+            pointer-events: none;
+        }
+
+        .stat-fill-cyber {
+            height: 100%;
+            background: 
+                linear-gradient(90deg, 
+                    #0088ff 0%, 
+                    #00c8ff 50%, 
+                    #00e0ff 100%);
+            border-radius: 2px;
+            animation: pulse-bar 3s ease-in-out infinite;
+            box-shadow: 
+                0 0 12px rgba(0, 200, 255, 0.7),
+                inset 0 0 8px rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-fill-cyber::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(255, 255, 255, 0.6), 
+                transparent);
+            animation: scan-bar 2s linear infinite;
+        }
+
+        @keyframes scan-bar {
+            0% { left: -100%; }
+            100% { left: 200%; }
+        }
+
+        @keyframes pulse-bar {
+            0%, 100% { 
+                width: 75%; 
+                opacity: 1;
+                box-shadow: 0 0 12px rgba(0, 200, 255, 0.7);
+            }
+            50% { 
+                width: 95%; 
+                opacity: 0.95;
+                box-shadow: 0 0 16px rgba(0, 200, 255, 0.9);
+            }
+        }
+
+        /* Responsive Cyberpunk Hero */
+        @media (max-width: 1200px) {
+            .holo-container {
+                width: 500px;
+                height: 250px;
+            }
+            
+            .stat-number {
+                font-size: 2.5rem;
+            }
+            
+            .neon-title {
+                font-size: 2.5rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .quantum-hero-section {
+                height: 400px;
+            }
+            
+            .holo-container {
+                width: 90%;
+                height: 200px;
+            }
+            
+            .holo-content {
+                padding: 20px;
+                flex-direction: column;
+                justify-content: center;
+                gap: 20px;
+            }
+            
+            .stat-number {
+                font-size: 2rem;
+            }
+            
+            .neon-title {
+                font-size: 1.8rem;
+                letter-spacing: 4px;
+                top: 40px;
+            }
+            
+            .subtitle {
+                font-size: 0.8rem;
+                top: 90px;
+            }
+            
+            .neon-grid {
+                height: 200px;
+            }
+        }
+
+        /* Header Section */
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            padding: 1.5rem 2rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .header-title h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--text-primary), var(--cyber-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-title p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1.25rem;
+            background: rgba(0, 255, 135, 0.1);
+            border: 1px solid var(--success);
+            border-radius: var(--radius-md);
+            color: var(--success);
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse-dot 2s ease-in-out infinite;
+            box-shadow: 0 0 10px var(--success);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .stat-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--cyber-blue), var(--cyber-teal));
+        }
+
+        .stat-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-medium), var(--glow-blue);
+            border-color: var(--cyber-blue);
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-title {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-icon {
+            font-size: 1.5rem;
+            color: var(--cyber-blue);
+            opacity: 0.7;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .stat-change {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .stat-change.positive {
+            color: var(--success);
+        }
+
+        .stat-change.negative {
+            color: var(--danger);
+        }
+
+        /* Chart Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .chart-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .chart-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .chart-control {
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .chart-control:hover,
+        .chart-control.active {
+            background: var(--cyber-blue);
+            color: var(--text-primary);
+            box-shadow: var(--glow-blue);
+        }
+
+        /* Security Events Feed */
+        .security-feed {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .feed-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .feed-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--success);
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse-dot 1.5s ease-in-out infinite;
+        }
+
+        .events-list {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+
+        .event-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: var(--radius-md);
+            transition: all 0.3s ease;
+        }
+
+        .event-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--cyber-blue);
+            transform: translateX(5px);
+        }
+
+        .event-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .event-icon.info {
+            background: rgba(116, 192, 252, 0.2);
+            color: var(--info);
+        }
+
+        .event-icon.warning {
+            background: rgba(255, 179, 71, 0.2);
+            color: var(--warning);
+        }
+
+        .event-icon.danger {
+            background: rgba(255, 107, 107, 0.2);
+            color: var(--danger);
+        }
+
+        .event-icon.success {
+            background: rgba(0, 255, 135, 0.2);
+            color: var(--success);
+        }
+
+        .event-content {
+            flex: 1;
+        }
+
+        .event-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+            font-size: 0.95rem;
+        }
+
+        .event-description {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .event-time {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Bottom Grid */
+        .bottom-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .dashboard-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: -280px;
+                height: 100vh;
+                z-index: 1000;
+                transition: left 0.3s ease;
+            }
+            
+            .sidebar.open {
+                left: 0;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+
+            .mobile-menu-toggle {
+                display: block;
+            }
+            
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .bottom-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Mobile Menu Toggle */
+        .mobile-menu-toggle {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 1001;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 0.75rem;
+            color: var(--text-primary);
+            cursor: pointer;
+            backdrop-filter: blur(20px);
+            font-size: 1.2rem;
+        }
+
+        .mobile-menu-toggle:hover {
+            background: var(--cyber-blue);
+            color: var(--primary-bg);
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-actions {
+                justify-content: center;
+            }
+        }
+
+        /* Animations */
+        @keyframes pulse-glow {
+            0%, 100% { 
+                opacity: 1;
+                box-shadow: 0 0 10px currentColor;
+            }
+            50% { 
+                opacity: 0.7;
+                box-shadow: 0 0 20px currentColor;
+            }
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { 
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% { 
+                opacity: 0.6;
+                transform: scale(1.2);
+            }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, var(--cyber-blue), var(--cyber-teal));
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, var(--cyber-blue-light), var(--cyber-teal-light));
+        }
+
+        /* Loading Animation */
+        .loading-spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(0, 212, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--cyber-blue);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Utility Classes */
+        .text-gradient {
+            background: linear-gradient(135deg, var(--cyber-blue), var(--cyber-teal));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .glow-blue {
+            box-shadow: var(--glow-blue);
+        }
+
+        .glow-teal {
+            box-shadow: var(--glow-teal);
+        }
+
+        .glow-purple {
+            box-shadow: var(--glow-purple);
+        }
+
+        /* Content Sections */
+        .content-section {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .content-section.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* Security Rules Styles */
+        .security-rule-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: var(--radius-md);
+            transition: all 0.3s ease;
+        }
+
+        .security-rule-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--cyber-blue);
+            transform: translateX(5px);
+        }
+
+        .rule-status {
+            font-size: 1.2rem;
+            width: 30px;
+            text-align: center;
+        }
+
+        .rule-status.active {
+            color: var(--success);
+        }
+
+        .rule-status.inactive {
+            color: var(--warning);
+        }
+
+        .rule-info {
+            flex: 1;
+        }
+
+        .rule-info h4 {
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .rule-info p {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        .rule-metrics {
+            color: var(--cyber-blue);
+            font-size: 0.875rem;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Threat Severity Styles */
+        .threat-severity-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: var(--radius-md);
+            transition: all 0.3s ease;
+        }
+
+        .threat-severity-item:hover {
+            transform: translateX(5px);
+        }
+
+        .threat-severity-item.high {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid var(--danger);
+        }
+
+        .threat-severity-item.medium {
+            background: rgba(255, 179, 71, 0.1);
+            border: 1px solid var(--warning);
+        }
+
+        .threat-severity-item.low {
+            background: rgba(116, 192, 252, 0.1);
+            border: 1px solid var(--info);
+        }
+
+        .severity-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .threat-severity-item.high .severity-indicator {
+            background: var(--danger);
+        }
+
+        .threat-severity-item.medium .severity-indicator {
+            background: var(--warning);
+        }
+
+        .threat-severity-item.low .severity-indicator {
+            background: var(--info);
+        }
+
+        .severity-label {
+            flex: 1;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .severity-count {
+            color: var(--cyber-blue);
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+        }
+
+        /* Blocked IP Styles */
+        .blocked-ip-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background: rgba(255, 107, 107, 0.05);
+            border: 1px solid rgba(255, 107, 107, 0.2);
+            border-radius: var(--radius-md);
+            transition: all 0.3s ease;
+        }
+
+        .blocked-ip-item:hover {
+            background: rgba(255, 107, 107, 0.1);
+            transform: translateX(5px);
+        }
+
+        .ip-address {
+            color: var(--danger);
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            min-width: 120px;
+        }
+
+        .block-reason {
+            flex: 1;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .block-time {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Settings Styles */
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+
+        .setting-item label {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .setting-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--cyber-blue);
+        }
+
+        .setting-item input[type="number"] {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-sm);
+            padding: 0.5rem;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            width: 80px;
+        }
+
+        .setting-item select {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-sm);
+            padding: 0.5rem;
+            color: var(--text-primary);
+            min-width: 100px;
+        }
+
+        /* Cyber Button */
+        .cyber-button {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, var(--cyber-blue), var(--cyber-teal));
+            border: none;
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.875rem;
+        }
+
+        .cyber-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .cyber-button:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--glow-blue);
+        }
+
+        .cyber-button:hover::before {
+            left: 100%;
+        }
+
+        .cyber-button:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Mobile Menu Toggle -->
+        <button class="mobile-menu-toggle" onclick="toggleSidebar()">☰</button>
+
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar" id="sidebar">
+            <div class="logo">
+                <h1>🛡️ VigilEdge</h1>
+                <p>Security Operations</p>
+            </div>
+            
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="/" class="nav-link active">
+                        <span class="nav-icon">📊</span>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/security-rules" class="nav-link">
+                        <span class="nav-icon">🛡️</span>
+                        <span>Security Rules</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/threat-detection" class="nav-link">
+                        <span class="nav-icon">🚨</span>
+                        <span>Threat Detection</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/analytics" class="nav-link">
+                        <span class="nav-icon">📈</span>
+                        <span>Analytics</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/network-monitor" class="nav-link">
+                        <span class="nav-icon">🌐</span>
+                        <span>Network Monitor</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/blocked-ips" class="nav-link">
+                        <span class="nav-icon">🚫</span>
+                        <span>Blocked IPs</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/event-logs" class="nav-link">
+                        <span class="nav-icon">📋</span>
+                        <span>Event Logs</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/settings" class="nav-link">
+                        <span class="nav-icon">⚙️</span>
+                        <span>Settings</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- CYBERPUNK NEON GRID HERO SECTION -->
+            <section class="quantum-hero-section">
+                <!-- Matrix Rain -->
+                <div class="matrix-rain" id="matrixRain"></div>
+
+                <!-- Data Streams -->
+                <div class="data-stream stream-1"></div>
+                <div class="data-stream stream-2"></div>
+                <div class="data-stream stream-3"></div>
+                <div class="data-stream stream-4"></div>
+
+                <!-- Neon Grid Floor -->
+                <div class="neon-grid">
+                    <div class="grid-plane"></div>
+                    <div class="grid-glow"></div>
+                </div>
+
+                <!-- Neon Title -->
+                <div class="neon-title">VIGILEDGE</div>
+                <div class="subtitle">CYBER DEFENSE PROTOCOL</div>
+
+                <!-- Holographic Threat Display -->
+                <div class="holo-container">
+                    <div class="holo-screen">
+                        <!-- Corner Brackets -->
+                        <div class="corner-bracket bracket-tl"></div>
+                        <div class="corner-bracket bracket-tr"></div>
+                        <div class="corner-bracket bracket-bl"></div>
+                        <div class="corner-bracket bracket-br"></div>
+                        
+                        <!-- Cyber Status Badge -->
+                        <div style="position: absolute; top: 12px; right: 20px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #00ff41; font-weight: 700; letter-spacing: 2px; z-index: 10; display: flex; align-items: center; gap: 8px;">
+                            <span style="width: 8px; height: 8px; background: #00ff41; border-radius: 50%; box-shadow: 0 0 10px #00ff41; animation: pulse-dot 1.5s infinite;"></span>
+                            SYSTEM ONLINE
+                        </div>
+                        
+                        <!-- Scanline Effect -->
+                        <div class="holo-scanline"></div>
+
+                        <!-- Stats Content -->
+                        <div class="holo-content">
+                            <div class="cyber-stat">
+                                <div class="stat-number danger" id="threatsBlocked">0</div>
+                                <div class="stat-label-cyber">Threats Blocked</div>
+                                <div class="stat-bar-cyber">
+                                    <div class="stat-fill-cyber"></div>
+                                </div>
+                            </div>
+
+                            <div class="cyber-stat">
+                                <div class="stat-number" id="activeConnections">0</div>
+                                <div class="stat-label-cyber">Active Scans</div>
+                                <div class="stat-bar-cyber">
+                                    <div class="stat-fill-cyber"></div>
+                                </div>
+                            </div>
+
+                            <div class="cyber-stat">
+                                <div class="stat-number success" id="requestsAllowed">0</div>
+                                <div class="stat-label-cyber">Requests Allowed</div>
+                                <div class="stat-bar-cyber">
+                                    <div class="stat-fill-cyber"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+                <!-- Statistics Grid -->
+                <section class="stats-grid" style="margin-top: 2rem;">
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-title">Total Requests</div>
+                            <div class="stat-icon">📈</div>
+                        </div>
+                        <div class="stat-value" id="total-requests">
+                            <div class="loading-spinner"></div>
+                        </div>
+                        <div class="stat-change positive">
+                            <span>↗️ +12.5%</span>
+                            <span>vs last hour</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-title">Blocked Threats</div>
+                            <div class="stat-icon">🛡️</div>
+                        </div>
+                        <div class="stat-value" id="blocked-threats">
+                            <div class="loading-spinner"></div>
+                        </div>
+                        <div class="stat-change positive">
+                            <span>↗️ +5.2%</span>
+                            <span>vs last hour</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-title">Active Connections</div>
+                            <div class="stat-icon">🌐</div>
+                        </div>
+                        <div class="stat-value" id="active-connections">
+                            <div class="loading-spinner"></div>
+                        </div>
+                        <div class="stat-change negative">
+                            <span>↘️ -2.1%</span>
+                            <span>vs last hour</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-title">Response Time</div>
+                            <div class="stat-icon">⚡</div>
+                        </div>
+                        <div class="stat-value" id="response-time">
+                            <div class="loading-spinner"></div>
+                        </div>
+                        <div class="stat-change positive">
+                            <span>↗️ -15ms</span>
+                            <span>vs last hour</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Charts Section -->
+                <section class="charts-grid">
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3 class="chart-title">Traffic & Threat Analysis</h3>
+                            <div class="chart-controls">
+                                <button class="chart-control active">24H</button>
+                                <button class="chart-control">7D</button>
+                                <button class="chart-control">30D</button>
+                            </div>
+                        </div>
+                        <div class="chart-container" id="traffic-chart">
+                            <!-- Chart will be rendered here -->
+                            <div style="height: 300px; display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
+                                📊 Interactive chart loading...
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="security-feed">
+                        <div class="feed-header">
+                            <h3 class="feed-title">
+                                🚨 Live Security Events
+                            </h3>
+                            <div class="live-indicator">
+                                <div class="live-dot"></div>
+                                <span>LIVE</span>
+                            </div>
+                        </div>
+                        <div class="events-list" id="security-events">
+                            <!-- Events will be populated here -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Bottom Section -->
+                <section class="bottom-grid">
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3 class="chart-title">Geographic Threat Map</h3>
+                            <div class="chart-controls">
+                                <button class="chart-control active">Global</button>
+                                <button class="chart-control">Regions</button>
+                            </div>
+                        </div>
+                        <div class="chart-container" id="geo-chart">
+                            <div style="height: 250px; display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
+                                🗺️ Geographic visualization loading...
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3 class="chart-title">Attack Types Distribution</h3>
+                            <div class="chart-controls">
+                                <button class="chart-control active">Today</button>
+                                <button class="chart-control">Week</button>
+                            </div>
+                        </div>
+                        <div class="chart-container" id="attack-types-chart">
+                            <div style="height: 250px; display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
+                                🎯 Attack analysis loading...
+                            </div>
+                        </div>
+                    </div>
+                </section>
+        </main>
+    </div>
+
+    <script>
+            <div id="security-rules-section" class="content-section">
+                <header class="dashboard-header">
+                    <div class="header-title">
+                        <h1>🛡️ Security Rules Management</h1>
+                        <p>Configure and manage WAF security rules and policies</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="cyber-button">Add New Rule</button>
+                    </div>
+                </header>
+
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Active Security Rules</h3>
+                        <div class="chart-controls">
+                            <button class="chart-control active">All</button>
+                            <button class="chart-control">SQL Injection</button>
+                            <button class="chart-control">XSS</button>
+                            <button class="chart-control">Rate Limiting</button>
+                        </div>
+                    </div>
+                    <div style="padding: 2rem;">
+                        <div class="security-rule-item">
+                            <div class="rule-status active">✅</div>
+                            <div class="rule-info">
+                                <h4>SQL Injection Protection</h4>
+                                <p>Blocks common SQL injection patterns and payloads</p>
+                            </div>
+                            <div class="rule-metrics">Blocked: 156 attacks</div>
+                        </div>
+                        <div class="security-rule-item">
+                            <div class="rule-status active">✅</div>
+                            <div class="rule-info">
+                                <h4>Cross-Site Scripting (XSS) Filter</h4>
+                                <p>Prevents XSS attacks by filtering malicious scripts</p>
+                            </div>
+                            <div class="rule-metrics">Blocked: 89 attacks</div>
+                        </div>
+                        <div class="security-rule-item">
+                            <div class="rule-status active">✅</div>
+                            <div class="rule-info">
+                                <h4>Rate Limiting</h4>
+                                <p>Limits requests per IP to prevent DDoS attacks</p>
+                            </div>
+                            <div class="rule-metrics">Limited: 45 IPs</div>
+                        </div>
+                        <div class="security-rule-item">
+                            <div class="rule-status inactive">⚠️</div>
+                            <div class="rule-info">
+                                <h4>Bot Detection</h4>
+                                <p>Identifies and blocks malicious bot traffic</p>
+                            </div>
+                            <div class="rule-metrics">Status: Disabled</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Threat Detection Section -->
+            <div id="threat-detection-section" class="content-section">
+                <header class="dashboard-header">
+                    <div class="header-title">
+                        <h1>🚨 Threat Detection Center</h1>
+                        <p>Advanced threat analysis and real-time security monitoring</p>
+                    </div>
+                    <div class="header-actions">
+                        <div class="status-indicator">
+                            <div class="status-dot"></div>
+                            <span>Scanning Active</span>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3 class="chart-title">Threat Detection Timeline</h3>
+                        </div>
+                        <div style="padding: 2rem; text-align: center; color: var(--text-muted);">
+                            🕒 Real-time threat timeline visualization
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3 class="chart-title">Threat Severity Distribution</h3>
+                        </div>
+                        <div style="padding: 2rem;">
+                            <div class="threat-severity-item high">
+                                <span class="severity-indicator"></span>
+                                <span class="severity-label">Critical</span>
+                                <span class="severity-count">12</span>
+                            </div>
+                            <div class="threat-severity-item medium">
+                                <span class="severity-indicator"></span>
+                                <span class="severity-label">High</span>
+                                <span class="severity-count">34</span>
+                            </div>
+                            <div class="threat-severity-item low">
+                                <span class="severity-indicator"></span>
+                                <span class="severity-label">Medium</span>
+                                <span class="severity-count">67</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Section -->
+            <div id="analytics-section" class="content-section">
+                <header class="dashboard-header">
+                    <div class="header-title">
+                        <h1>📈 Security Analytics</h1>
+                        <p>Deep insights and security metrics analysis</p>
+                    </div>
+                </header>
+
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Security Performance Metrics</h3>
+                    </div>
+                    <div style="padding: 2rem; text-align: center; color: var(--text-muted);">
+                        📊 Comprehensive analytics dashboard coming soon
+                    </div>
+                </div>
+            </div>
+
+            <!-- Network Monitor Section -->
+            <div id="network-monitor-section" class="content-section">
+                <header class="dashboard-header">
+                    <div class="header-title">
+                        <h1>🌐 Network Monitor</h1>
+                        <p>Real-time network traffic and connection monitoring</p>
+                    </div>
+                </header>
+
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Network Traffic Monitor</h3>
+                    </div>
+                    <div style="padding: 2rem; text-align: center; color: var(--text-muted);">
+                        🌐 Live network monitoring interface
+                    </div>
+                </div>
+            </div>
+
+            <!-- Blocked IPs Section -->
+            <div id="blocked-ips-section" class="content-section">
+                <header class="dashboard-header">
+                    <div class="header-title">
+                        <h1>🚫 Blocked IP Addresses</h1>
+                        <p>Manage and monitor blocked IP addresses and ranges</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="cyber-button">Add IP Block</button>
+                    </div>
+                </header>
+
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Recently Blocked IPs</h3>
+                    </div>
+                    <div style="padding: 2rem;">
+                        <div class="blocked-ip-item">
+                            <span class="ip-address">192.168.1.100</span>
+                            <span class="block-reason">SQL Injection Attempt</span>
+                            <span class="block-time">2 minutes ago</span>
+                        </div>
+                        <div class="blocked-ip-item">
+                            <span class="ip-address">10.0.0.45</span>
+                            <span class="block-reason">Rate Limit Exceeded</span>
+                            <span class="block-time">5 minutes ago</span>
+                        </div>
+                        <div class="blocked-ip-item">
+                            <span class="ip-address">203.0.113.12</span>
+                            <span class="block-reason">Suspicious Bot Activity</span>
+                            <span class="block-time">12 minutes ago</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event Logs Section -->
+            <div id="event-logs-section" class="content-section">
+                <header class="dashboard-header">
+                    <div class="header-title">
+                        <h1>📋 Security Event Logs</h1>
+                        <p>Comprehensive security event logging and analysis</p>
+                    </div>
+                </header>
+
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Security Event History</h3>
+                        <div class="chart-controls">
+                            <button class="chart-control active">All Events</button>
+                            <button class="chart-control">Critical</button>
+                            <button class="chart-control">Warnings</button>
+                        </div>
+                    </div>
+                    <div style="padding: 2rem; text-align: center; color: var(--text-muted);">
+                        📋 Detailed event logs and audit trail
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Section -->
+            <div id="settings-section" class="content-section">
+                <header class="dashboard-header">
+                    <div class="header-title">
+                        <h1>⚙️ System Settings</h1>
+                        <p>Configure WAF settings and system preferences</p>
+                    </div>
+                </header>
+
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3 class="chart-title">General Settings</h3>
+                        </div>
+                        <div style="padding: 2rem;">
+                            <div class="setting-item">
+                                <label>Debug Mode</label>
+                                <input type="checkbox" checked>
+                            </div>
+                            <div class="setting-item">
+                                <label>Auto-Block Malicious IPs</label>
+                                <input type="checkbox" checked>
+                            </div>
+                            <div class="setting-item">
+                                <label>Real-time Alerts</label>
+                                <input type="checkbox" checked>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3 class="chart-title">Security Preferences</h3>
+                        </div>
+                        <div style="padding: 2rem;">
+                            <div class="setting-item">
+                                <label>Threat Detection Sensitivity</label>
+                                <select>
+                                    <option>High</option>
+                                    <option selected>Medium</option>
+                                    <option>Low</option>
+                                </select>
+                            </div>
+                            <div class="setting-item">
+                                <label>Rate Limit (requests/minute)</label>
+                                <input type="number" value="100">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/js/enhanced-dashboard.js"></script>
+    <script>
+        // Mobile menu toggle
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('open');
+        }
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function(e) {
+            const sidebar = document.getElementById('sidebar');
+            const toggle = document.querySelector('.mobile-menu-toggle');
+            
+            if (window.innerWidth <= 1200 && 
+                !sidebar.contains(e.target) && 
+                !toggle.contains(e.target) && 
+                sidebar.classList.contains('open')) {
+                sidebar.classList.remove('open');
+            }
+        });
+
+        // Dashboard JavaScript functionality
+        class VigilEdgeDashboard {
+            constructor() {
+                this.wsConnection = null;
+                this.init();
+            }
+
+            init() {
+                this.connectWebSocket();
+                this.loadInitialData();
+                this.setupEventListeners();
+                this.startDataRefresh();
+                this.populateSecurityEvents();
+                
+                // Initialize with dashboard section active
+                this.switchSection('dashboard');
+                
+                // Set dashboard nav as active
+                const dashboardNav = document.querySelector('.nav-link[data-section="dashboard"]');
+                if (dashboardNav) {
+                    dashboardNav.classList.add('active');
+                }
+            }
+
+            connectWebSocket() {
+                try {
+                    this.wsConnection = new WebSocket('ws://localhost:5000/ws');
+                    
+                    this.wsConnection.onopen = () => {
+                        console.log('🔌 WebSocket connected');
+                        this.addSecurityEvent('system', 'WebSocket connection established', 'success');
+                    };
+
+                    this.wsConnection.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+                        this.handleWebSocketMessage(data);
+                    };
+
+                    this.wsConnection.onclose = () => {
+                        console.log('🔌 WebSocket disconnected');
+                        this.addSecurityEvent('system', 'WebSocket connection lost - attempting reconnect', 'warning');
+                        setTimeout(() => this.connectWebSocket(), 5000);
+                    };
+
+                    this.wsConnection.onerror = (error) => {
+                        console.error('🔌 WebSocket error:', error);
+                        this.addSecurityEvent('system', 'WebSocket connection error', 'danger');
+                    };
+                } catch (error) {
+                    console.error('WebSocket connection failed:', error);
+                }
+            }
+
+            async loadInitialData() {
+                try {
+                    const response = await fetch('/api/v1/metrics');
+                    const metrics = await response.json();
+                    this.updateMetrics(metrics);
+                } catch (error) {
+                    console.error('Failed to load initial data:', error);
+                    this.setErrorValues();
+                }
+            }
+
+            updateMetrics(metrics) {
+                this.animateValue('total-requests', metrics.total_requests || 1247, 'number');
+                this.animateValue('blocked-threats', metrics.blocked_requests || 23, 'number');
+                this.animateValue('active-connections', metrics.active_connections || 156, 'number');
+                this.animateValue('response-time', (metrics.avg_response_time * 1000).toFixed(1) || 45.3, 'ms');
+            }
+
+            setErrorValues() {
+                document.getElementById('total-requests').textContent = '---';
+                document.getElementById('blocked-threats').textContent = '---';
+                document.getElementById('active-connections').textContent = '---';
+                document.getElementById('response-time').textContent = '---';
+            }
+
+            animateValue(elementId, finalValue, suffix = '') {
+                const element = document.getElementById(elementId);
+                const duration = 2000;
+                const startValue = 0;
+                const increment = finalValue / (duration / 16);
+                let currentValue = startValue;
+
+                const timer = setInterval(() => {
+                    currentValue += increment;
+                    if (currentValue >= finalValue) {
+                        currentValue = finalValue;
+                        clearInterval(timer);
+                    }
+                    
+                    const displayValue = suffix === 'number' ? 
+                        Math.floor(currentValue).toLocaleString() : 
+                        currentValue.toFixed(1) + (suffix === 'ms' ? 'ms' : '');
+                    
+                    element.textContent = displayValue;
+                }, 16);
+            }
+
+            handleWebSocketMessage(data) {
+                switch (data.type) {
+                    case 'metrics':
+                        this.updateMetrics(data.data);
+                        break;
+                    case 'security_event':
+                        this.addSecurityEvent(data.event_type, data.message, data.severity);
+                        break;
+                    case 'alert':
+                        this.addSecurityEvent('alert', data.message, data.severity);
+                        break;
+                }
+            }
+
+            addSecurityEvent(type, message, severity = 'info') {
+                const eventsContainer = document.getElementById('security-events');
+                const eventElement = document.createElement('div');
+                eventElement.className = 'event-item';
+                
+                const iconMap = {
+                    system: '⚙️',
+                    security: '🛡️',
+                    threat: '🚨',
+                    alert: '⚠️',
+                    network: '🌐'
+                };
+
+                const severityClass = severity === 'success' ? 'success' : 
+                                   severity === 'warning' ? 'warning' : 
+                                   severity === 'danger' ? 'danger' : 'info';
+
+                eventElement.innerHTML = `
+                    <div class="event-icon ${severityClass}">
+                        ${iconMap[type] || '📋'}
+                    </div>
+                    <div class="event-content">
+                        <div class="event-title">${this.capitalizeFirst(type)} Event</div>
+                        <div class="event-description">${message}</div>
+                        <div class="event-time">${new Date().toLocaleTimeString()}</div>
+                    </div>
+                `;
+
+                eventsContainer.insertBefore(eventElement, eventsContainer.firstChild);
+
+                // Keep only the last 15 events
+                while (eventsContainer.children.length > 15) {
+                    eventsContainer.removeChild(eventsContainer.lastChild);
+                }
+
+                // Add entrance animation
+                eventElement.style.opacity = '0';
+                eventElement.style.transform = 'translateX(-20px)';
+                setTimeout(() => {
+                    eventElement.style.transition = 'all 0.3s ease';
+                    eventElement.style.opacity = '1';
+                    eventElement.style.transform = 'translateX(0)';
+                }, 100);
+            }
+
+            populateSecurityEvents() {
+                // Add some initial demo events
+                const demoEvents = [
+                    { type: 'security', message: 'SQL injection attempt blocked from IP 192.168.1.100', severity: 'danger' },
+                    { type: 'system', message: 'WAF rules updated successfully', severity: 'success' },
+                    { type: 'threat', message: 'Suspicious bot activity detected and mitigated', severity: 'warning' },
+                    { type: 'network', message: 'High traffic volume from region: Asia-Pacific', severity: 'info' },
+                    { type: 'security', message: 'XSS payload neutralized in user input', severity: 'danger' },
+                    { type: 'system', message: 'Security scan completed - 0 vulnerabilities found', severity: 'success' }
+                ];
+
+                demoEvents.forEach((event, index) => {
+                    setTimeout(() => {
+                        this.addSecurityEvent(event.type, event.message, event.severity);
+                    }, index * 1000);
+                });
+            }
+
+            setupEventListeners() {
+                // Chart control buttons
+                document.querySelectorAll('.chart-control').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const parent = e.target.closest('.chart-header');
+                        parent.querySelectorAll('.chart-control').forEach(btn => btn.classList.remove('active'));
+                        e.target.classList.add('active');
+                    });
+                });
+
+                // Navigation links
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        const targetSection = link.getAttribute('data-section');
+                        
+                        // Only prevent default if this is a data-section link (SPA navigation)
+                        // Allow normal navigation for href links
+                        if (targetSection) {
+                            e.preventDefault();
+                            this.switchSection(targetSection);
+                            
+                            // Update active nav item
+                            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                            e.target.closest('.nav-link').classList.add('active');
+                        }
+                        // If no data-section attribute, allow normal href navigation
+                    });
+                });
+            }
+
+            switchSection(sectionId) {
+                // Hide all sections
+                document.querySelectorAll('.content-section').forEach(section => {
+                    section.classList.remove('active');
+                });
+
+                // Show target section
+                const targetSection = document.getElementById(sectionId);
+                if (targetSection) {
+                    targetSection.classList.add('active');
+                }
+
+                // Update charts and data for the active section
+                this.updateSectionData(sectionId);
+            }
+
+            updateSectionData(sectionId) {
+                switch (sectionId) {
+                    case 'dashboard':
+                        this.initializeCharts();
+                        break;
+                    case 'threat-detection':
+                        this.loadThreatData();
+                        break;
+                    case 'analytics':
+                        this.loadAnalyticsData();
+                        break;
+                    case 'network-monitor':
+                        this.loadNetworkData();
+                        break;
+                    default:
+                        // For other sections, just log the section change
+                        console.log(`Switched to section: ${sectionId}`);
+                }
+            }
+
+            loadThreatData() {
+                // Simulate loading threat data
+                console.log('Loading threat detection data...');
+                // This would typically fetch data from the API
+            }
+
+            loadAnalyticsData() {
+                // Simulate loading analytics data
+                console.log('Loading analytics data...');
+                // This would typically render charts for analytics section
+            }
+
+            loadNetworkData() {
+                // Simulate loading network monitoring data
+                console.log('Loading network monitoring data...');
+                // This would typically fetch real-time network data
+            }
+
+            startDataRefresh() {
+                // Refresh data every 30 seconds
+                setInterval(() => {
+                    this.loadInitialData();
+                }, 30000);
+
+                // Add random security events every 10-30 seconds
+                setInterval(() => {
+                    const randomEvents = [
+                        { type: 'network', message: 'Normal traffic patterns detected', severity: 'info' },
+                        { type: 'system', message: 'Periodic security scan initiated', severity: 'info' },
+                        { type: 'security', message: 'Rate limiting applied to suspicious IP', severity: 'warning' }
+                    ];
+                    
+                    const randomEvent = randomEvents[Math.floor(Math.random() * randomEvents.length)];
+                    this.addSecurityEvent(randomEvent.type, randomEvent.message, randomEvent.severity);
+                }, Math.random() * 20000 + 10000);
+            }
+
+            capitalizeFirst(str) {
+                return str.charAt(0).toUpperCase() + str.slice(1);
+            }
+        }
+
+        // Initialize dashboard when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new VigilEdgeDashboard();
+            initializeCyberpunkHero();
+        });
+
+        // ===== CYBERPUNK NEON GRID ANIMATIONS =====
+        function initializeCyberpunkHero() {
+            createMatrixRain();
+            updateCyberStats();
+            setInterval(updateCyberStats, 5000);
+        }
+
+        // Create Matrix-style falling code
+        function createMatrixRain() {
+            const matrixRain = document.getElementById('matrixRain');
+            if (!matrixRain) return;
+
+            const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+            const columns = Math.floor(window.innerWidth / 20);
+
+            for (let i = 0; i < columns; i++) {
+                const column = document.createElement('div');
+                column.className = 'matrix-column';
+                column.style.left = (i * 20) + 'px';
+                column.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                column.style.animationDelay = (Math.random() * 2) + 's';
+                
+                let text = '';
+                const length = Math.floor(Math.random() * 20) + 10;
+                for (let j = 0; j < length; j++) {
+                    text += chars[Math.floor(Math.random() * chars.length)] + '\n';
+                }
+                column.textContent = text;
+                
+                matrixRain.appendChild(column);
+            }
+        }
+
+        // Update cyber stats with real-time data
+        async function updateCyberStats() {
+            try {
+                const response = await fetch('/api/v1/metrics');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const metrics = data.data;
+                    animateCounter('threatsBlocked', metrics.requests_blocked || 0);
+                    animateCounter('activeConnections', metrics.active_connections || Math.floor(Math.random() * 50) + 10);
+                    animateCounter('requestsAllowed', metrics.requests_allowed || 0);
+                }
+            } catch (error) {
+                console.error('Error fetching cyber stats:', error);
+            }
+        }
+
+        // Smooth counter animation
+        function animateCounter(elementId, targetValue) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+
+            const isNumber = typeof targetValue === 'number';
+            if (!isNumber) {
+                element.textContent = targetValue;
+                return;
+            }
+
+            const duration = 1500;
+            const start = 0;
+            const increment = targetValue / (duration / 16);
+            let current = start;
+
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= targetValue) {
+                    current = targetValue;
+                    clearInterval(timer);
+                }
+                element.textContent = Math.floor(current).toLocaleString();
+            }, 16);
+        }
+
+        // ========== LIVE CHARTS IMPLEMENTATION ==========
+        
+        let trafficChart, geoChart, attackTypesChart;
+        let trafficData = {
+            labels: [],
+            datasets: [{
+                label: 'Total Traffic',
+                data: [],
+                borderColor: 'rgba(0, 212, 255, 1)',
+                backgroundColor: 'rgba(0, 212, 255, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }, {
+                label: 'Blocked Threats',
+                data: [],
+                borderColor: 'rgba(255, 107, 107, 1)',
+                backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        };
+
+        // Initialize Traffic & Threat Analysis Chart
+        function initTrafficChart() {
+            const ctx = document.getElementById('traffic-chart');
+            if (!ctx) return;
+            
+            // Clear loading message
+            ctx.innerHTML = '<canvas id="trafficChartCanvas"></canvas>';
+            const canvas = document.getElementById('trafficChartCanvas');
+            
+            trafficChart = new Chart(canvas, {
+                type: 'line',
+                data: trafficData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                color: '#e1e7f5',
+                                font: { size: 12, family: 'Inter' }
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(20, 25, 45, 0.95)',
+                            titleColor: '#00d4ff',
+                            bodyColor: '#e1e7f5',
+                            borderColor: 'rgba(100, 200, 255, 0.3)',
+                            borderWidth: 1
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(100, 200, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 11 }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(100, 200, 255, 0.05)'
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 11 }
+                            }
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    },
+                    animation: {
+                        duration: 750,
+                        easing: 'easeInOutQuart'
+                    }
+                }
+            });
+        }
+
+        // Initialize Geographic Threat Map (Simulated with Bar Chart)
+        function initGeoChart() {
+            const ctx = document.getElementById('geo-chart');
+            if (!ctx) return;
+            
+            ctx.innerHTML = '<canvas id="geoChartCanvas"></canvas>';
+            const canvas = document.getElementById('geoChartCanvas');
+            
+            geoChart = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: ['USA', 'China', 'Russia', 'Germany', 'Brazil', 'India'],
+                    datasets: [{
+                        label: 'Threat Origins',
+                        data: [45, 32, 28, 15, 12, 8],
+                        backgroundColor: [
+                            'rgba(255, 107, 107, 0.8)',
+                            'rgba(255, 179, 71, 0.8)',
+                            'rgba(255, 255, 107, 0.8)',
+                            'rgba(0, 212, 255, 0.8)',
+                            'rgba(116, 192, 252, 0.8)',
+                            'rgba(0, 255, 135, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(255, 107, 107, 1)',
+                            'rgba(255, 179, 71, 1)',
+                            'rgba(255, 255, 107, 1)',
+                            'rgba(0, 212, 255, 1)',
+                            'rgba(116, 192, 252, 1)',
+                            'rgba(0, 255, 135, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(20, 25, 45, 0.95)',
+                            titleColor: '#00d4ff',
+                            bodyColor: '#e1e7f5',
+                            borderColor: 'rgba(100, 200, 255, 0.3)',
+                            borderWidth: 1
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(100, 200, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 11 }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 11 }
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeOutBounce'
+                    }
+                }
+            });
+        }
+
+        // Initialize Attack Types Distribution Chart
+        function initAttackTypesChart() {
+            const ctx = document.getElementById('attack-types-chart');
+            if (!ctx) return;
+            
+            ctx.innerHTML = '<canvas id="attackTypesChartCanvas"></canvas>';
+            const canvas = document.getElementById('attackTypesChartCanvas');
+            
+            attackTypesChart = new Chart(canvas, {
+                type: 'doughnut',
+                data: {
+                    labels: ['SQL Injection', 'XSS', 'DDoS', 'Brute Force', 'Path Traversal', 'Other'],
+                    datasets: [{
+                        data: [35, 25, 20, 10, 7, 3],
+                        backgroundColor: [
+                            'rgba(255, 107, 107, 0.8)',
+                            'rgba(255, 179, 71, 0.8)',
+                            'rgba(255, 255, 107, 0.8)',
+                            'rgba(0, 212, 255, 0.8)',
+                            'rgba(124, 58, 237, 0.8)',
+                            'rgba(148, 163, 184, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(255, 107, 107, 1)',
+                            'rgba(255, 179, 71, 1)',
+                            'rgba(255, 255, 107, 1)',
+                            'rgba(0, 212, 255, 1)',
+                            'rgba(124, 58, 237, 1)',
+                            'rgba(148, 163, 184, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'right',
+                            labels: {
+                                color: '#e1e7f5',
+                                font: { size: 11, family: 'Inter' },
+                                padding: 10
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(20, 25, 45, 0.95)',
+                            titleColor: '#00d4ff',
+                            bodyColor: '#e1e7f5',
+                            borderColor: 'rgba(100, 200, 255, 0.3)',
+                            borderWidth: 1,
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        animateRotate: true,
+                        animateScale: true,
+                        duration: 1500,
+                        easing: 'easeInOutQuart'
+                    }
+                }
+            });
+        }
+
+        // Update Traffic Chart with live data
+        async function updateTrafficChart() {
+            try {
+                const response = await fetch('/api/v1/metrics');
+                const data = await response.json();
+                
+                const now = new Date();
+                const timeLabel = now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0');
+                
+                // Add new data point
+                trafficData.labels.push(timeLabel);
+                trafficData.datasets[0].data.push(data.total_requests || Math.floor(Math.random() * 100) + 50);
+                trafficData.datasets[1].data.push(data.blocked_requests || Math.floor(Math.random() * 30) + 5);
+                
+                // Keep only last 20 data points
+                if (trafficData.labels.length > 20) {
+                    trafficData.labels.shift();
+                    trafficData.datasets[0].data.shift();
+                    trafficData.datasets[1].data.shift();
+                }
+                
+                if (trafficChart) {
+                    trafficChart.update('none'); // Update without animation for smooth live updates
+                }
+            } catch (error) {
+                console.error('Error updating traffic chart:', error);
+            }
+        }
+
+        // Update Geographic Chart with live data
+        async function updateGeoChart() {
+            try {
+                const response = await fetch('/api/v1/events?limit=50');
+                const data = await response.json();
+                
+                // Simulate geographic data from events
+                const geoData = {
+                    'USA': Math.floor(Math.random() * 20) + 30,
+                    'China': Math.floor(Math.random() * 15) + 20,
+                    'Russia': Math.floor(Math.random() * 15) + 15,
+                    'Germany': Math.floor(Math.random() * 10) + 10,
+                    'Brazil': Math.floor(Math.random() * 8) + 8,
+                    'India': Math.floor(Math.random() * 5) + 5
+                };
+                
+                if (geoChart) {
+                    geoChart.data.datasets[0].data = Object.values(geoData);
+                    geoChart.update('active');
+                }
+            } catch (error) {
+                console.error('Error updating geo chart:', error);
+            }
+        }
+
+        // Update Attack Types Chart with live data
+        async function updateAttackTypesChart() {
+            try {
+                const response = await fetch('/api/v1/events?limit=100');
+                const data = await response.json();
+                
+                // Simulate attack type distribution
+                const attackData = [
+                    Math.floor(Math.random() * 20) + 25,  // SQL Injection
+                    Math.floor(Math.random() * 15) + 15,  // XSS
+                    Math.floor(Math.random() * 15) + 15,  // DDoS
+                    Math.floor(Math.random() * 10) + 5,   // Brute Force
+                    Math.floor(Math.random() * 8) + 5,    // Path Traversal
+                    Math.floor(Math.random() * 5) + 2     // Other
+                ];
+                
+                if (attackTypesChart) {
+                    attackTypesChart.data.datasets[0].data = attackData;
+                    attackTypesChart.update('active');
+                }
+            } catch (error) {
+                console.error('Error updating attack types chart:', error);
+            }
+        }
+
+        // Initialize all charts on page load
+        function initializeAllCharts() {
+            console.log('🎨 Initializing live charts...');
+            
+            // Initialize charts
+            initTrafficChart();
+            initGeoChart();
+            initAttackTypesChart();
+            
+            // Initial data population
+            updateTrafficChart();
+            updateGeoChart();
+            updateAttackTypesChart();
+            
+            // Set up live updates
+            setInterval(updateTrafficChart, 3000);      // Update every 3 seconds
+            setInterval(updateGeoChart, 5000);          // Update every 5 seconds
+            setInterval(updateAttackTypesChart, 4000);  // Update every 4 seconds
+            
+            console.log('✅ Live charts initialized and updating!');
+        }
+
+        // Add to existing initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeAllCharts();
+        });
+    </script>
+</body>
+</html>

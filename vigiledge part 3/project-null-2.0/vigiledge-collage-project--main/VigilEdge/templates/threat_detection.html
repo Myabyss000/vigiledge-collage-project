@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Threat Detection - VigilEdge WAF</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="stylesheet" href="/static/css/enhanced-dashboard.css">
+    <style>
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #1a1f2e;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: #a0a9c0;
+            --text-muted: #6b7280;
+            --cyber-blue: #00d4ff;
+            --cyber-teal: #00ffa6;
+            --cyber-purple: #7c3aed;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --glow-blue: 0 0 20px rgba(0, 212, 255, 0.5);
+            --glow-teal: 0 0 20px rgba(0, 255, 166, 0.5);
+            --glow-purple: 0 0 20px rgba(124, 58, 237, 0.5);
+            --radius-sm: 6px;
+            --radius-md: 12px;
+            --radius-lg: 18px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--glass-border);
+            padding: 2rem 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--cyber-blue), var(--cyber-teal));
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .logo-subtitle {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 0 1rem;
+        }
+
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: var(--radius-md);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            transform: translateX(5px);
+        }
+
+        .nav-link.active {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 255, 166, 0.1));
+            color: var(--text-primary);
+            border-left: 3px solid var(--cyber-blue);
+            box-shadow: var(--glow-blue);
+        }
+
+        .nav-icon {
+            font-size: 1.25rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+        }
+
+        .page-header {
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--cyber-blue), var(--cyber-teal));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-subtitle {
+            color: var(--text-muted);
+            font-size: 1.125rem;
+        }
+
+        /* Threat Overview Grid */
+        .threat-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .threat-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .threat-card.critical {
+            border-color: var(--danger);
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
+        }
+
+        .threat-card.critical::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--danger);
+        }
+
+        .threat-card.warning {
+            border-color: var(--warning);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
+        }
+
+        .threat-card.warning::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--warning);
+        }
+
+        .threat-card.info {
+            border-color: var(--info);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+        }
+
+        .threat-card.info::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--info);
+        }
+
+        .threat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .threat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .threat-info h3 {
+            color: var(--text-primary);
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .threat-count {
+            font-size: 2.5rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            line-height: 1;
+        }
+
+        .threat-card.critical .threat-count {
+            color: var(--danger);
+        }
+
+        .threat-card.warning .threat-count {
+            color: var(--warning);
+        }
+
+        .threat-card.info .threat-count {
+            color: var(--info);
+        }
+
+        .threat-description {
+            color: var(--text-muted);
+            font-size: 0.925rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Real-time Threats */
+        .realtime-section {
+            margin-bottom: 2rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .refresh-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--cyber-blue);
+            font-size: 0.875rem;
+        }
+
+        .refresh-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--cyber-blue);
+            border-radius: 50%;
+            animation: pulse-dot 1s ease-in-out infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+
+        .threat-list {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+
+        .threat-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--glass-border);
+            transition: all 0.3s ease;
+        }
+
+        .threat-item:last-child {
+            border-bottom: none;
+        }
+
+        .threat-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .threat-severity {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .threat-severity.high {
+            background: var(--danger);
+            box-shadow: 0 0 10px var(--danger);
+        }
+
+        .threat-severity.medium {
+            background: var(--warning);
+            box-shadow: 0 0 10px var(--warning);
+        }
+
+        .threat-severity.low {
+            background: var(--info);
+            box-shadow: 0 0 10px var(--info);
+        }
+
+        .threat-details {
+            flex: 1;
+        }
+
+        .threat-title {
+            color: var(--text-primary);
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .threat-ip {
+            color: var(--cyber-blue);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .threat-time {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        .threat-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .action-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .action-btn.block {
+            background: var(--danger);
+            color: white;
+        }
+
+        .action-btn.block:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
+        }
+
+        .action-btn.analyze {
+            background: rgba(0, 212, 255, 0.2);
+            color: var(--cyber-blue);
+            border: 1px solid var(--cyber-blue);
+        }
+
+        .action-btn.analyze:hover {
+            background: rgba(0, 212, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+
+            .page-title {
+                font-size: 2rem;
+            }
+
+            .threat-overview {
+                grid-template-columns: 1fr;
+            }
+
+            .threat-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .threat-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">🛡️</div>
+                <div>
+                    <div class="logo-text">VigilEdge</div>
+                    <div class="logo-subtitle">SECURITY OPERATIONS</div>
+                </div>
+            </div>
+            
+            <nav>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="/" class="nav-link">
+                            <span class="nav-icon">📊</span>
+                            Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/security-rules" class="nav-link">
+                            <span class="nav-icon">🔒</span>
+                            Security Rules
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/threat-detection" class="nav-link active">
+                            <span class="nav-icon">🚨</span>
+                            Threat Detection
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/analytics" class="nav-link">
+                            <span class="nav-icon">📈</span>
+                            Analytics
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/network-monitor" class="nav-link">
+                            <span class="nav-icon">🌐</span>
+                            Network Monitor
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/blocked-ips" class="nav-link">
+                            <span class="nav-icon">🚫</span>
+                            Blocked IPs
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/event-logs" class="nav-link">
+                            <span class="nav-icon">📝</span>
+                            Event Logs
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/settings" class="nav-link">
+                            <span class="nav-icon">⚙️</span>
+                            Settings
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1 class="page-title">Threat Detection</h1>
+                <p class="page-subtitle">Real-time monitoring and analysis of security threats</p>
+            </div>
+
+            <!-- Threat Overview -->
+            <div class="threat-overview">
+                <div class="threat-card critical">
+                    <div class="threat-header">
+                        <div class="threat-info">
+                            <h3>Critical Threats</h3>
+                            <div class="threat-count">3</div>
+                        </div>
+                    </div>
+                    <div class="threat-description">
+                        Active threats requiring immediate attention
+                    </div>
+                </div>
+
+                <div class="threat-card warning">
+                    <div class="threat-header">
+                        <div class="threat-info">
+                            <h3>Medium Threats</h3>
+                            <div class="threat-count">12</div>
+                        </div>
+                    </div>
+                    <div class="threat-description">
+                        Suspicious activities under investigation
+                    </div>
+                </div>
+
+                <div class="threat-card info">
+                    <div class="threat-header">
+                        <div class="threat-info">
+                            <h3>Low Risk</h3>
+                            <div class="threat-count">47</div>
+                        </div>
+                    </div>
+                    <div class="threat-description">
+                        Minor anomalies and informational alerts
+                    </div>
+                </div>
+
+                <div class="threat-card info">
+                    <div class="threat-header">
+                        <div class="threat-info">
+                            <h3>Blocked Today</h3>
+                            <div class="threat-count">1,284</div>
+                        </div>
+                    </div>
+                    <div class="threat-description">
+                        Total threats blocked in the last 24 hours
+                    </div>
+                </div>
+            </div>
+
+            <!-- Real-time Threats -->
+            <div class="realtime-section">
+                <div class="section-header">
+                    <h2 class="section-title">Real-time Threat Feed</h2>
+                    <div class="refresh-indicator">
+                        <div class="refresh-dot"></div>
+                        Live Updates
+                    </div>
+                </div>
+
+                <div class="threat-list">
+                    <div class="threat-item">
+                        <div class="threat-severity high"></div>
+                        <div class="threat-details">
+                            <div class="threat-title">SQL Injection Attempt Detected</div>
+                            <div class="threat-ip">192.168.1.45</div>
+                            <div class="threat-time">2 minutes ago</div>
+                        </div>
+                        <div class="threat-actions">
+                            <button class="action-btn block">Block IP</button>
+                            <button class="action-btn analyze">Analyze</button>
+                        </div>
+                    </div>
+
+                    <div class="threat-item">
+                        <div class="threat-severity high"></div>
+                        <div class="threat-details">
+                            <div class="threat-title">Brute Force Login Attack</div>
+                            <div class="threat-ip">203.45.127.89</div>
+                            <div class="threat-time">5 minutes ago</div>
+                        </div>
+                        <div class="threat-actions">
+                            <button class="action-btn block">Block IP</button>
+                            <button class="action-btn analyze">Analyze</button>
+                        </div>
+                    </div>
+
+                    <div class="threat-item">
+                        <div class="threat-severity high"></div>
+                        <div class="threat-details">
+                            <div class="threat-title">DDoS Attack Pattern</div>
+                            <div class="threat-ip">Multiple IPs</div>
+                            <div class="threat-time">8 minutes ago</div>
+                        </div>
+                        <div class="threat-actions">
+                            <button class="action-btn block">Block Range</button>
+                            <button class="action-btn analyze">Analyze</button>
+                        </div>
+                    </div>
+
+                    <div class="threat-item">
+                        <div class="threat-severity medium"></div>
+                        <div class="threat-details">
+                            <div class="threat-title">Suspicious File Upload</div>
+                            <div class="threat-ip">172.16.0.23</div>
+                            <div class="threat-time">12 minutes ago</div>
+                        </div>
+                        <div class="threat-actions">
+                            <button class="action-btn block">Block IP</button>
+                            <button class="action-btn analyze">Analyze</button>
+                        </div>
+                    </div>
+
+                    <div class="threat-item">
+                        <div class="threat-severity medium"></div>
+                        <div class="threat-details">
+                            <div class="threat-title">XSS Attack Vector</div>
+                            <div class="threat-ip">198.51.100.14</div>
+                            <div class="threat-time">15 minutes ago</div>
+                        </div>
+                        <div class="threat-actions">
+                            <button class="action-btn block">Block IP</button>
+                            <button class="action-btn analyze">Analyze</button>
+                        </div>
+                    </div>
+
+                    <div class="threat-item">
+                        <div class="threat-severity low"></div>
+                        <div class="threat-details">
+                            <div class="threat-title">Rate Limit Exceeded</div>
+                            <div class="threat-ip">10.0.0.15</div>
+                            <div class="threat-time">18 minutes ago</div>
+                        </div>
+                        <div class="threat-actions">
+                            <button class="action-btn analyze">Analyze</button>
+                        </div>
+                    </div>
+
+                    <div class="threat-item">
+                        <div class="threat-severity low"></div>
+                        <div class="threat-details">
+                            <div class="threat-title">Unusual User Agent</div>
+                            <div class="threat-ip">192.0.2.100</div>
+                            <div class="threat-time">22 minutes ago</div>
+                        </div>
+                        <div class="threat-actions">
+                            <button class="action-btn analyze">Analyze</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Simulate real-time updates
+        function updateThreatFeed() {
+            const threatItems = document.querySelectorAll('.threat-item');
+            const randomItem = threatItems[Math.floor(Math.random() * threatItems.length)];
+            
+            // Add flash effect
+            randomItem.style.backgroundColor = 'rgba(0, 212, 255, 0.1)';
+            setTimeout(() => {
+                randomItem.style.backgroundColor = '';
+            }, 1000);
+        }
+
+        // Update threat counts
+        function updateThreatCounts() {
+            const criticalCount = document.querySelector('.threat-card.critical .threat-count');
+            const warningCount = document.querySelector('.threat-card.warning .threat-count');
+            const infoCount = document.querySelector('.threat-card.info .threat-count');
+            
+            // Simulate changing numbers
+            if (Math.random() > 0.7) {
+                const current = parseInt(criticalCount.textContent);
+                criticalCount.textContent = Math.max(0, current + (Math.random() > 0.5 ? 1 : -1));
+            }
+        }
+
+        // Add click handlers for action buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            const blockButtons = document.querySelectorAll('.action-btn.block');
+            const analyzeButtons = document.querySelectorAll('.action-btn.analyze');
+            
+            blockButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    this.textContent = 'BLOCKED';
+                    this.disabled = true;
+                    this.style.backgroundColor = '#6b7280';
+                    
+                    // Remove the threat item after animation
+                    setTimeout(() => {
+                        this.closest('.threat-item').style.opacity = '0';
+                        this.closest('.threat-item').style.transform = 'translateX(100%)';
+                        setTimeout(() => {
+                            this.closest('.threat-item').remove();
+                        }, 300);
+                    }, 1000);
+                });
+            });
+            
+            analyzeButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    this.textContent = 'ANALYZING...';
+                    this.disabled = true;
+                    setTimeout(() => {
+                        this.textContent = 'ANALYZED';
+                        this.style.backgroundColor = 'rgba(16, 185, 129, 0.2)';
+                        this.style.color = '#10b981';
+                        this.style.borderColor = '#10b981';
+                    }, 2000);
+                });
+            });
+        });
+
+        // Start real-time updates
+        setInterval(updateThreatFeed, 5000);
+        setInterval(updateThreatCounts, 10000);
+    </script>
+</body>
+</html>
