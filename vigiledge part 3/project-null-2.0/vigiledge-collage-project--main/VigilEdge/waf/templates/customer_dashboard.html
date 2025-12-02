@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VigilEdge WAF - Customer Dashboard</title>
+    <style>
+        :root {
+            --primary-dark: #0a0a0f;
+            --secondary-dark: #1a1a2e;
+            --accent-cyan: #00d4ff;
+            --accent-green: #00ff9f;
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --success-green: #2ed573;
+            --warning-orange: #ffa502;
+            --danger-red: #ff4757;
+            --info-blue: #3742fa;
+            --radius-lg: 16px;
+            --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.3);
+            --glow-blue: 0 0 20px rgba(0, 212, 255, 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary-dark), var(--secondary-dark));
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .dashboard-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            flex-shrink: 0;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--glass-border);
+            padding: 2rem 1rem;
+            position: fixed;
+            height: 100vh;
+            width: 280px;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-green));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .user-info {
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--glass-border);
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-green));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin: 0 auto 0.5rem;
+        }
+
+        .user-name {
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 0.25rem;
+        }
+
+        .user-role {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: var(--radius-lg);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--text-primary);
+            background: rgba(0, 212, 255, 0.1);
+            box-shadow: var(--glow-blue);
+            transform: translateX(5px);
+        }
+
+        .nav-link:hover::before {
+            left: 100%;
+        }
+
+        .nav-link.active {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.15), rgba(0, 255, 166, 0.1));
+            color: var(--text-primary);
+            border: 1px solid var(--accent-cyan);
+            box-shadow: var(--glow-blue);
+        }
+
+        .nav-icon {
+            font-size: 1.25rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+            background: rgba(255, 255, 255, 0.02);
+            min-height: calc(100vh - 4rem);
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding: 1.5rem 2rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .header-title h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-green));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-title p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(46, 213, 115, 0.1);
+            border: 1px solid var(--success-green);
+            border-radius: 25px;
+            color: var(--success-green);
+            font-size: 0.9rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success-green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .logout-btn {
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, var(--danger-red), #ff6b7a);
+            border: none;
+            border-radius: 25px;
+            color: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 71, 87, 0.3);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-soft);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .stat-title {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .stat-icon {
+            font-size: 1.5rem;
+            opacity: 0.7;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-change {
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .stat-change.positive {
+            color: var(--success-green);
+        }
+
+        .stat-change.negative {
+            color: var(--danger-red);
+        }
+
+        /* Charts Section */
+        .charts-section {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .chart-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .chart-placeholder {
+            height: 300px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        /* Access Control */
+        .access-limited {
+            background: rgba(255, 165, 2, 0.1);
+            border: 1px solid var(--warning-orange);
+            border-radius: var(--radius-lg);
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            color: var(--warning-orange);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .dashboard-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                position: relative;
+                width: 100%;
+                height: auto;
+            }
+            
+            .main-content {
+                flex: 1;
+            }
+            
+            .charts-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .disabled-feature {
+            opacity: 0.5;
+            pointer-events: none;
+            position: relative;
+        }
+
+        .disabled-feature::after {
+            content: '🔒 Admin Only';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 165, 2, 0.9);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">VigilEdge</div>
+                <div style="font-size: 0.9rem; color: var(--text-secondary);">Customer Portal</div>
+            </div>
+
+            <div class="user-info">
+                <div class="user-avatar">{{ username[0].upper() if username else 'U' }}</div>
+                <div class="user-name">{{ username or 'User' }}</div>
+                <div class="user-role">{{ role.title() if role else 'Customer' }}</div>
+            </div>
+
+            <nav>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="/dashboard" class="nav-link active">
+                            <span class="nav-icon">📊</span>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/customer/security-overview" class="nav-link">
+                            <span class="nav-icon">🛡️</span>
+                            <span>Security Overview</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/customer/threat-reports" class="nav-link">
+                            <span class="nav-icon">🚨</span>
+                            <span>Threat Reports</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/customer/blocked-ips" class="nav-link">
+                            <span class="nav-icon">🚫</span>
+                            <span>Blocked IPs</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/customer/analytics" class="nav-link">
+                            <span class="nav-icon">📈</span>
+                            <span>Analytics</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="dashboard-header">
+                <div class="header-title">
+                    <h1>Security Dashboard</h1>
+                    <p>Customer protection overview and threat monitoring</p>
+                </div>
+                <div class="header-actions">
+                    <div class="status-indicator">
+                        <div class="status-dot"></div>
+                        <span>Protected</span>
+                    </div>
+                    <button class="logout-btn" onclick="logout()">Logout</button>
+                </div>
+            </header>
+
+            <!-- Access Control Notice -->
+            <div class="access-limited">
+                <span>⚠️</span>
+                <span>You have limited access to security features. Contact administrator for full access.</span>
+            </div>
+
+            <!-- Statistics Grid -->
+            <section class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">Requests Today</div>
+                        <div class="stat-icon">📈</div>
+                    </div>
+                    <div class="stat-value" id="total-requests">{{ metrics.total_requests or 1247 }}</div>
+                    <div class="stat-change positive">
+                        <span>↗</span>
+                        <span>+12% from yesterday</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">Blocked Threats</div>
+                        <div class="stat-icon">🛡️</div>
+                    </div>
+                    <div class="stat-value" id="blocked-threats">{{ metrics.blocked_requests or 23 }}</div>
+                    <div class="stat-change positive">
+                        <span>↗</span>
+                        <span>+3 from yesterday</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">Security Score</div>
+                        <div class="stat-icon">🏆</div>
+                    </div>
+                    <div class="stat-value" id="security-score">98.2%</div>
+                    <div class="stat-change positive">
+                        <span>↗</span>
+                        <span>Excellent</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">Last Scan</div>
+                        <div class="stat-icon">🔍</div>
+                    </div>
+                    <div class="stat-value" style="font-size: 1.5rem;">2min ago</div>
+                    <div class="stat-change positive">
+                        <span>✓</span>
+                        <span>All systems clean</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Charts Section -->
+            <section class="charts-section">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div class="chart-title">Traffic Overview</div>
+                    </div>
+                    <div class="chart-placeholder">
+                        📊 Traffic monitoring chart would appear here
+                        <br><small>(Real-time data visualization)</small>
+                    </div>
+                </div>
+
+                <div class="chart-card disabled-feature">
+                    <div class="chart-header">
+                        <div class="chart-title">Advanced Analytics</div>
+                    </div>
+                    <div class="chart-placeholder">
+                        📈 Advanced analytics
+                        <br><small>(Admin access required)</small>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Recent Activity -->
+            <section class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-title">Recent Security Events</div>
+                </div>
+                <div style="padding: 1rem 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--glass-border);">
+                        <span>🛡️ SQL injection attempt blocked</span>
+                        <span style="color: var(--text-secondary); font-size: 0.85rem;">2 minutes ago</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--glass-border);">
+                        <span>🚫 Suspicious IP 192.168.1.100 blocked</span>
+                        <span style="color: var(--text-secondary); font-size: 0.85rem;">5 minutes ago</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--glass-border);">
+                        <span>✅ Security scan completed successfully</span>
+                        <span style="color: var(--text-secondary); font-size: 0.85rem;">15 minutes ago</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0;">
+                        <span>🔍 DDoS protection activated</span>
+                        <span style="color: var(--text-secondary); font-size: 0.85rem;">1 hour ago</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Auto-refresh data every 30 seconds
+        setInterval(async () => {
+            try {
+                const response = await fetch('/api/v1/metrics');
+                if (response.ok) {
+                    const metrics = await response.json();
+                    document.getElementById('total-requests').textContent = metrics.total_requests || 0;
+                    document.getElementById('blocked-threats').textContent = metrics.blocked_requests || 0;
+                }
+            } catch (error) {
+                console.log('Failed to refresh metrics:', error);
+            }
+        }, 30000);
+
+        // Logout function
+        async function logout() {
+            try {
+                const response = await fetch('/logout', { method: 'POST' });
+                if (response.ok) {
+                    window.location.href = '/login';
+                }
+            } catch (error) {
+                console.error('Logout failed:', error);
+                // Force redirect anyway
+                window.location.href = '/login';
+            }
+        }
+
+        // Add navigation active state management
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function() {
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // Simulate real-time updates
+        setInterval(() => {
+            const dots = document.querySelectorAll('.status-dot');
+            dots.forEach(dot => {
+                dot.style.animation = 'none';
+                setTimeout(() => dot.style.animation = 'pulse 2s infinite', 10);
+            });
+        }, 10000);
+    </script>
+</body>
+</html>

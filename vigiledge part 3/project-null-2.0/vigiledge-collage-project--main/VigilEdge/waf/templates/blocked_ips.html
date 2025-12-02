@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blocked IPs - VigilEdge WAF</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-bg: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 30%, #16213e 60%, #0f3460 100%);
+            --glass-bg: rgba(255, 255, 255, 0.06);
+            --glass-border: rgba(100, 200, 255, 0.2);
+            --card-bg: rgba(30, 30, 50, 0.85);
+            --sidebar-bg: rgba(20, 25, 45, 0.95);
+            --cyber-blue: #00d4ff;
+            --cyber-teal: #00ffa6;
+            --cyber-purple: #7c3aed;
+            --text-primary: #ffffff;
+            --text-secondary: #e1e7f5;
+            --text-muted: #94a3b8;
+            --success: #00ff87;
+            --warning: #ffb347;
+            --danger: #ff6b6b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--primary-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 280px;
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--glass-border);
+            padding: 2rem 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .logo {
+            text-align: center;
+            padding: 0 1.5rem 2rem;
+            border-bottom: 1px solid var(--glass-border);
+            margin-bottom: 2rem;
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--cyber-blue), var(--cyber-teal));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 0 1rem;
+        }
+
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .nav-icon {
+            font-size: 1.2rem;
+            margin-right: 1rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            flex: 1;
+            padding: 2rem;
+            background: transparent;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--cyber-blue), var(--cyber-teal));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .page-subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+        }
+
+        .btn:hover {
+            background: var(--cyber-blue);
+            color: var(--primary-bg);
+            transform: translateY(-2px);
+        }
+
+        .btn.danger {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .btn.danger:hover {
+            background: var(--danger);
+            color: var(--text-primary);
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--danger), var(--warning));
+        }
+
+        .stat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            opacity: 0.8;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Search and Filter */
+        .controls-section {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .search-input {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            color: var(--text-primary);
+            font-size: 1rem;
+            width: 100%;
+        }
+
+        .search-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .filter-select {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            color: var(--text-primary);
+            font-size: 1rem;
+            min-width: 150px;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2300d4ff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 12px;
+            padding-right: 2.5rem;
+        }
+        
+        .filter-select option {
+            background: rgba(20, 20, 40, 0.98);
+            color: #ffffff;
+            padding: 0.75rem;
+        }
+
+        /* Blocked IPs Table */
+        .blocked-ips-section {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            overflow: hidden;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .blocked-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .blocked-table th,
+        .blocked-table td {
+            text-align: left;
+            padding: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .blocked-table th {
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .blocked-table td {
+            color: var(--text-secondary);
+        }
+
+        .blocked-table tr:hover {
+            background: var(--glass-bg);
+        }
+
+        .ip-address {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 500;
+            color: var(--cyber-blue);
+        }
+
+        .block-reason {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .block-reason.malicious {
+            background: rgba(255, 107, 107, 0.2);
+            color: var(--danger);
+        }
+
+        .block-reason.suspicious {
+            background: rgba(255, 179, 71, 0.2);
+            color: var(--warning);
+        }
+
+        .block-reason.bot {
+            background: rgba(124, 58, 237, 0.2);
+            color: var(--cyber-purple);
+        }
+
+        .block-reason.manual {
+            background: rgba(0, 212, 255, 0.2);
+            color: var(--cyber-blue);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .action-btn {
+            padding: 0.25rem 0.5rem;
+            border: none;
+            background: var(--glass-bg);
+            color: var(--text-secondary);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.8rem;
+        }
+
+        .action-btn:hover {
+            background: var(--cyber-blue);
+            color: var(--primary-bg);
+        }
+
+        .action-btn.unblock {
+            color: var(--success);
+        }
+
+        .action-btn.unblock:hover {
+            background: var(--success);
+            color: var(--primary-bg);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 9999;
+            backdrop-filter: blur(10px);
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            position: relative;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(30, 30, 50, 0.95);
+            border: 2px solid rgba(0, 212, 255, 0.5);
+            border-radius: 16px;
+            padding: 2rem;
+            min-width: 450px;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .form-label {
+            display: block;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .form-input {
+            width: 100%;
+            background: rgba(20, 20, 40, 0.9);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+            padding: 0.75rem;
+            color: #ffffff;
+            font-size: 1rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        .form-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+        
+        select.form-input {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2300d4ff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 12px;
+            padding-right: 2.5rem;
+        }
+        
+        select.form-input option {
+            background: rgba(20, 20, 40, 0.98);
+            color: #ffffff;
+            padding: 0.75rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 2rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .mobile-menu-toggle {
+                display: block;
+            }
+
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Mobile Menu Toggle */
+        .mobile-menu-toggle {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 1001;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 0.75rem;
+            color: var(--text-primary);
+            cursor: pointer;
+            backdrop-filter: blur(20px);
+            font-size: 1.2rem;
+        }
+
+        .mobile-menu-toggle:hover {
+            background: var(--cyber-blue);
+            color: var(--primary-bg);
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">☰</button>
+
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar" id="sidebar">
+        <div class="logo">
+            <h1>🛡️ VigilEdge</h1>
+            <p>Security Operations</p>
+        </div>
+        
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="/" class="nav-link">
+                    <span class="nav-icon">📊</span>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/security-rules" class="nav-link">
+                    <span class="nav-icon">🛡️</span>
+                    <span>Security Rules</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/threat-detection" class="nav-link">
+                    <span class="nav-icon">🚨</span>
+                    <span>Threat Detection</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/analytics" class="nav-link">
+                    <span class="nav-icon">📈</span>
+                    <span>Analytics</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/network-monitor" class="nav-link">
+                    <span class="nav-icon">🌐</span>
+                    <span>Network Monitor</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/blocked-ips" class="nav-link active">
+                    <span class="nav-icon">🚫</span>
+                    <span>Blocked IPs</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/event-logs" class="nav-link">
+                    <span class="nav-icon">📋</span>
+                    <span>Event Logs</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/settings" class="nav-link">
+                    <span class="nav-icon">⚙️</span>
+                    <span>Settings</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">🚫 Blocked IP Addresses</h1>
+                <p class="page-subtitle">Manage blocked IPs and security blacklists</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn" onclick="openAddModal()">➕ Block New IP</button>
+                <button class="btn danger" onclick="clearAllBlocked()">🗑️ Clear All</button>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon">🚫</div>
+                </div>
+                <div class="stat-value">{{ stats.total_blocked or 0 }}</div>
+                <div class="stat-label">Total Blocked IPs</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon">⚠️</div>
+                </div>
+                <div class="stat-value">{{ stats.blocked_today or 0 }}</div>
+                <div class="stat-label">Blocked Today</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon">🤖</div>
+                </div>
+                <div class="stat-value">{{ stats.automatic_blocks or 0 }}</div>
+                <div class="stat-label">Auto-Blocked</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon">🔄</div>
+                </div>
+                <div class="stat-value">{{ stats.manual_blocks or 0 }}</div>
+                <div class="stat-label">Manual Blocks</div>
+            </div>
+        </div>
+
+        <!-- Search and Filter Controls -->
+        <div class="controls-section">
+            <div class="controls-grid">
+                <input type="text" class="search-input" placeholder="Search IP addresses..." id="searchInput">
+                <select class="filter-select" id="reasonFilter">
+                    <option value="">All Reasons</option>
+                    <option value="malicious">Malicious Activity</option>
+                    <option value="suspicious">Suspicious Behavior</option>
+                    <option value="bot">Bot Traffic</option>
+                    <option value="manual">Manual Block</option>
+                </select>
+                <button class="btn" onclick="exportBlockedIPs()">📥 Export</button>
+            </div>
+        </div>
+
+        <!-- Blocked IPs Table -->
+        <div class="blocked-ips-section">
+            <div class="section-header">
+                <h3 class="section-title">Blocked IP Addresses</h3>
+                <span id="totalCount" class="text-muted">{{ stats.total_blocked or 0 }} total entries</span>
+            </div>
+            <table class="blocked-table">
+                <thead>
+                    <tr>
+                        <th>IP Address</th>
+                        <th>Reason</th>
+                        <th>Blocked Date</th>
+                        <th>Attempts</th>
+                        <th>Country</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="blockedIPsTable">
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                            Loading blocked IPs...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Add IP Modal -->
+    <div id="addIPModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Block New IP Address</h3>
+                <p class="text-muted">Add an IP address to the blocked list</p>
+            </div>
+            <form id="addIPForm">
+                <div class="form-group">
+                    <label class="form-label">IP Address</label>
+                    <input type="text" class="form-input" id="newIPAddress" placeholder="192.168.1.100" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Reason</label>
+                    <select class="form-input" id="blockReason" required>
+                        <option value="">Select reason</option>
+                        <option value="malicious">Malicious Activity</option>
+                        <option value="suspicious">Suspicious Behavior</option>
+                        <option value="bot">Bot Traffic</option>
+                        <option value="manual">Manual Block</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Notes (Optional)</label>
+                    <input type="text" class="form-input" id="blockNotes" placeholder="Additional notes...">
+                </div>
+            </form>
+            <div class="modal-actions">
+                <button class="btn" onclick="closeAddModal()">Cancel</button>
+                <button class="btn" onclick="addBlockedIP()">🚫 Block IP</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mobile menu toggle
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('open');
+        }
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function(e) {
+            const sidebar = document.getElementById('sidebar');
+            const toggle = document.querySelector('.mobile-menu-toggle');
+            
+            if (window.innerWidth <= 768 && 
+                !sidebar.contains(e.target) && 
+                !toggle.contains(e.target) && 
+                sidebar.classList.contains('open')) {
+                sidebar.classList.remove('open');
+            }
+        });
+
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', function() {
+            filterTable();
+        });
+
+        document.getElementById('reasonFilter').addEventListener('change', function() {
+            filterTable();
+        });
+
+        function filterTable() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const reasonFilter = document.getElementById('reasonFilter').value;
+            const table = document.getElementById('blockedIPsTable');
+            const rows = table.querySelectorAll('tr');
+
+            let visibleCount = 0;
+            rows.forEach(row => {
+                const ip = row.cells[0]?.textContent.toLowerCase() || '';
+                const reason = row.querySelector('.block-reason')?.className.includes(reasonFilter) || reasonFilter === '';
+                
+                const matchesSearch = ip.includes(searchTerm);
+                const matchesFilter = reason;
+                
+                if (matchesSearch && matchesFilter) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            document.getElementById('totalCount').textContent = `${visibleCount} entries shown`;
+        }
+
+        function openAddModal() {
+            document.getElementById('addIPModal').style.display = 'block';
+        }
+
+        function closeAddModal() {
+            document.getElementById('addIPModal').style.display = 'none';
+            document.getElementById('addIPForm').reset();
+        }
+
+        async function addBlockedIP() {
+            const ip = document.getElementById('newIPAddress').value;
+            const reason = document.getElementById('blockReason').value;
+            const notes = document.getElementById('blockNotes').value;
+
+            if (!ip || !reason) {
+                alert('Please fill in required fields');
+                return;
+            }
+
+            // Validate IP format (each octet 0-255)
+            const ipRegex = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+            if (!ipRegex.test(ip)) {
+                alert('Please enter a valid IP address (e.g., 192.168.1.100)');
+                return;
+            }
+
+            try {
+                // Call API to block IP
+                const response = await fetch('/api/v1/blocked-ips', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        ip: ip,
+                        reason: getReasonLabel(reason),
+                        reason_type: reason,
+                        notes: notes
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert(`✅ Successfully blocked IP: ${ip}`);
+                    closeAddModal();
+                    fetchBlockedIPs(); // Refresh the table
+                } else {
+                    alert(`❌ Failed to block IP: ${data.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('Error blocking IP:', error);
+                alert('❌ Error blocking IP. Please try again.');
+            }
+        }
+
+        function getReasonLabel(reason) {
+            const labels = {
+                'malicious': 'Malicious Activity',
+                'suspicious': 'Suspicious Behavior',
+                'bot': 'Bot Traffic',
+                'manual': 'Manual Block'
+            };
+            return labels[reason] || reason;
+        }
+
+        async function unblockIP(ip) {
+            if (confirm(`Are you sure you want to unblock ${ip}?`)) {
+                try {
+                    const response = await fetch(`/api/v1/blocked-ips/${encodeURIComponent(ip)}`, {
+                        method: 'DELETE'
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        alert(`✅ Successfully unblocked IP: ${ip}`);
+                        fetchBlockedIPs(); // Refresh the table
+                    } else {
+                        alert(`❌ Failed to unblock IP: ${data.error || 'Unknown error'}`);
+                    }
+                } catch (error) {
+                    console.error('Error unblocking IP:', error);
+                    alert('❌ Error unblocking IP. Please try again.');
+                }
+            }
+        }
+
+        async function clearAllBlocked() {
+            if (confirm('⚠️ Are you sure you want to clear ALL blocked IPs? This action cannot be undone.')) {
+                try {
+                    const response = await fetch('/api/v1/blocked-ips/clear', {
+                        method: 'POST'
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        alert('✅ All blocked IPs have been cleared');
+                        fetchBlockedIPs(); // Refresh the table
+                    } else {
+                        alert(`❌ Failed to clear blocked IPs: ${data.error || 'Unknown error'}`);
+                    }
+                } catch (error) {
+                    console.error('Error clearing blocked IPs:', error);
+                    alert('❌ Error clearing blocked IPs. Please try again.');
+                }
+            }
+        }
+
+        async function exportBlockedIPs() {
+            try {
+                const response = await fetch('/api/v1/blocked-ips');
+                const data = await response.json();
+                
+                if (data.success && data.blocked_ips && data.blocked_ips.length > 0) {
+                    // Create CSV content
+                    let csvContent = "IP Address,Reason,Reason Type,Blocked Date,Attempts,Country\n";
+                    
+                    data.blocked_ips.forEach(ip => {
+                        const row = [
+                            ip.ip,
+                            ip.reason || 'N/A',
+                            ip.reason_type || 'manual',
+                            ip.blocked_at || 'N/A',
+                            ip.attempts || 1,
+                            ip.country || 'Unknown'
+                        ].join(',');
+                        csvContent += row + "\n";
+                    });
+                    
+                    // Create download link
+                    const blob = new Blob([csvContent], { type: 'text/csv' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `blocked_ips_${new Date().toISOString().split('T')[0]}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    
+                    alert('✅ Blocked IPs exported successfully!');
+                } else {
+                    alert('⚠️ No blocked IPs to export');
+                }
+            } catch (error) {
+                console.error('Error exporting blocked IPs:', error);
+                alert('❌ Failed to export blocked IPs');
+            }
+        }
+
+        function updateStats() {
+            const table = document.getElementById('blockedIPsTable');
+            const totalBlocked = table.querySelectorAll('tr').length;
+            
+            // Update the first stat card
+            const statValue = document.querySelector('.stat-value');
+            if (statValue) {
+                statValue.textContent = totalBlocked;
+            }
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('addIPModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeAddModal();
+            }
+        });
+
+        // Simulate real-time updates
+        setInterval(() => {
+            // Occasionally add new blocked IPs
+            if (Math.random() < 0.1) {
+                addRandomBlockedIP();
+            }
+        }, 10000);
+
+        function addRandomBlockedIP() {
+            const table = document.getElementById('blockedIPsTable');
+            const reasons = ['malicious', 'suspicious', 'bot'];
+            const countries = ['🇺🇸 United States', '🇷🇺 Russia', '🇨🇳 China', '🇩🇪 Germany', '🇧🇷 Brazil'];
+            
+            const ip = generateRandomIP();
+            const reason = reasons[Math.floor(Math.random() * reasons.length)];
+            const country = countries[Math.floor(Math.random() * countries.length)];
+            const attempts = Math.floor(Math.random() * 200) + 1;
+            const now = new Date().toLocaleString();
+            
+            const row = table.insertRow(0);
+            row.innerHTML = `
+                <td><span class="ip-address">${ip}</span></td>
+                <td><span class="block-reason ${reason}">${getReasonLabel(reason)}</span></td>
+                <td>${now}</td>
+                <td>${attempts}</td>
+                <td>${country}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="action-btn">🔍 Details</button>
+                        <button class="action-btn unblock" onclick="unblockIP('${ip}')">🔓 Unblock</button>
+                    </div>
+                </td>
+            `;
+            
+            fetchBlockedIPs();
+        }
+        
+        // Fetch real blocked IPs from API
+        async function fetchBlockedIPs() {
+            try {
+                const response = await fetch('/api/v1/blocked-ips');
+                const data = await response.json();
+                
+                const tbody = document.getElementById('blockedIPsTable');
+                const totalCount = document.getElementById('totalCount');
+                
+                if (data.blocked_ips && data.blocked_ips.length > 0) {
+                    tbody.innerHTML = '';
+                    totalCount.textContent = `${data.count} total entries`;
+                    
+                    data.blocked_ips.forEach(ipData => {
+                        const row = tbody.insertRow();
+                        const timeAgo = getRelativeTime(ipData.blocked_at || new Date().toISOString());
+                        
+                        row.innerHTML = `
+                            <td><span class="ip-address">${ipData.ip}</span></td>
+                            <td><span class="block-reason ${ipData.reason_type || 'manual'}">${ipData.reason || 'Blocked by WAF'}</span></td>
+                            <td>${timeAgo}</td>
+                            <td>${ipData.attempts || 1}</td>
+                            <td>🌍 Unknown</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="action-btn">🔍 Details</button>
+                                    <button class="action-btn unblock" onclick="unblockIP('${ipData.ip}')">🔓 Unblock</button>
+                                </div>
+                            </td>
+                        `;
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">No blocked IPs. Your firewall is monitoring all traffic.</td></tr>';
+                    totalCount.textContent = '0 total entries';
+                }
+            } catch (error) {
+                console.error('Failed to fetch blocked IPs:', error);
+            }
+        }
+        
+        // Calculate relative time
+        function getRelativeTime(timestamp) {
+            const now = new Date();
+            const past = new Date(timestamp);
+            const diffMs = now - past;
+            const diffMin = Math.floor(diffMs / 60000);
+            const diffHour = Math.floor(diffMin / 60);
+            const diffDay = Math.floor(diffHour / 24);
+            
+            if (diffMin < 60) return `${diffMin}m ago`;
+            if (diffHour < 24) return `${diffHour}h ago`;
+            return `${diffDay}d ago`;
+        }
+        
+        // Initial load and periodic refresh
+        fetchBlockedIPs();
+        setInterval(fetchBlockedIPs, 10000);
+    </script>
+</body>
+</html>

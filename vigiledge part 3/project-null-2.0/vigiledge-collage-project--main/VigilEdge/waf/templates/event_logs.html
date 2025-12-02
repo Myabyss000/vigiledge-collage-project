@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Logs - VigilEdge WAF</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-bg: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 30%, #16213e 60%, #0f3460 100%);
+            --glass-bg: rgba(255, 255, 255, 0.06);
+            --glass-border: rgba(100, 200, 255, 0.2);
+            --card-bg: rgba(30, 30, 50, 0.85);
+            --sidebar-bg: rgba(20, 25, 45, 0.95);
+            --cyber-blue: #00d4ff;
+            --cyber-teal: #00ffa6;
+            --cyber-purple: #7c3aed;
+            --text-primary: #ffffff;
+            --text-secondary: #e1e7f5;
+            --text-muted: #94a3b8;
+            --success: #00ff87;
+            --warning: #ffb347;
+            --danger: #ff6b6b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--primary-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 280px;
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--glass-border);
+            padding: 2rem 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .logo {
+            text-align: center;
+            padding: 0 1.5rem 2rem;
+            border-bottom: 1px solid var(--glass-border);
+            margin-bottom: 2rem;
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--cyber-blue), var(--cyber-teal));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 0 1rem;
+        }
+
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .nav-icon {
+            font-size: 1.2rem;
+            margin-right: 1rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            flex: 1;
+            padding: 2rem;
+            background: transparent;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--cyber-blue), var(--cyber-teal));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .page-subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+        }
+
+        .btn:hover {
+            background: var(--cyber-blue);
+            color: var(--primary-bg);
+            transform: translateY(-2px);
+        }
+
+        /* Log Filter Controls */
+        .filter-controls {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: 1fr auto auto auto auto;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .search-input, .filter-select {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .search-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .filter-select {
+            min-width: 120px;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2300d4ff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 12px;
+            padding-right: 2.5rem;
+        }
+        
+        .filter-select option {
+            background: rgba(20, 20, 40, 0.98);
+            color: #ffffff;
+            padding: 0.75rem;
+        }
+
+        /* Live Log Stream */
+        .log-stream {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .stream-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .stream-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .stream-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--success);
+            font-size: 0.9rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .log-entry {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+            border-left: 3px solid;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .log-entry.info {
+            border-left-color: var(--cyber-blue);
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .log-entry.warning {
+            border-left-color: var(--warning);
+            background: rgba(255, 179, 71, 0.05);
+        }
+
+        .log-entry.error {
+            border-left-color: var(--danger);
+            background: rgba(255, 107, 107, 0.05);
+        }
+
+        .log-entry.success {
+            border-left-color: var(--success);
+            background: rgba(0, 255, 135, 0.05);
+        }
+
+        .log-timestamp {
+            color: var(--text-muted);
+            margin-right: 1rem;
+        }
+
+        .log-level {
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-right: 1rem;
+            text-transform: uppercase;
+        }
+
+        .log-level.info {
+            background: rgba(0, 212, 255, 0.2);
+            color: var(--cyber-blue);
+        }
+
+        .log-level.warn {
+            background: rgba(255, 179, 71, 0.2);
+            color: var(--warning);
+        }
+
+        .log-level.error {
+            background: rgba(255, 107, 107, 0.2);
+            color: var(--danger);
+        }
+
+        .log-level.success {
+            background: rgba(0, 255, 135, 0.2);
+            color: var(--success);
+        }
+
+        .log-message {
+            color: var(--text-secondary);
+        }
+
+        /* Event Details Table */
+        .events-section {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            overflow: hidden;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .events-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .events-table th,
+        .events-table td {
+            text-align: left;
+            padding: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .events-table th {
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .events-table td {
+            color: var(--text-secondary);
+        }
+
+        .events-table tr:hover {
+            background: var(--glass-bg);
+        }
+
+        .event-type {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .event-type.security {
+            background: rgba(255, 107, 107, 0.2);
+            color: var(--danger);
+        }
+
+        .event-type.access {
+            background: rgba(0, 212, 255, 0.2);
+            color: var(--cyber-blue);
+        }
+
+        .event-type.system {
+            background: rgba(0, 255, 166, 0.2);
+            color: var(--cyber-teal);
+        }
+
+        .event-type.admin {
+            background: rgba(124, 58, 237, 0.2);
+            color: var(--cyber-purple);
+        }
+
+        .severity-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .severity-badge.critical {
+            background: var(--danger);
+            color: white;
+        }
+
+        .severity-badge.high {
+            background: rgba(255, 107, 107, 0.8);
+            color: white;
+        }
+
+        .severity-badge.medium {
+            background: var(--warning);
+            color: var(--primary-bg);
+        }
+
+        .severity-badge.low {
+            background: var(--success);
+            color: var(--primary-bg);
+        }
+
+        .severity-badge.info {
+            background: var(--cyber-blue);
+            color: var(--primary-bg);
+        }
+
+        /* Auto-scroll toggle */
+        .auto-scroll-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .toggle-switch {
+            width: 40px;
+            height: 20px;
+            background: var(--glass-bg);
+            border-radius: 10px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-switch.active {
+            background: var(--success);
+        }
+
+        .toggle-slider {
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(20px);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .filter-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="logo">
+            <h1>🛡️ VigilEdge</h1>
+            <p>Security Operations</p>
+        </div>
+        
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="/" class="nav-link">
+                    <span class="nav-icon">📊</span>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/security-rules" class="nav-link">
+                    <span class="nav-icon">🛡️</span>
+                    <span>Security Rules</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/threat-detection" class="nav-link">
+                    <span class="nav-icon">🚨</span>
+                    <span>Threat Detection</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/analytics" class="nav-link">
+                    <span class="nav-icon">📈</span>
+                    <span>Analytics</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/network-monitor" class="nav-link">
+                    <span class="nav-icon">🌐</span>
+                    <span>Network Monitor</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/blocked-ips" class="nav-link">
+                    <span class="nav-icon">🚫</span>
+                    <span>Blocked IPs</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/event-logs" class="nav-link active">
+                    <span class="nav-icon">📋</span>
+                    <span>Event Logs</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/settings" class="nav-link">
+                    <span class="nav-icon">⚙️</span>
+                    <span>Settings</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">📋 Event Logs</h1>
+                <p class="page-subtitle">Real-time system events and security monitoring</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn" onclick="exportLogs()">📥 Export Logs</button>
+                <button class="btn" onclick="clearLogs()">🗑️ Clear Logs</button>
+            </div>
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="filter-controls">
+            <div class="filter-grid">
+                <input type="text" class="search-input" placeholder="Search logs..." id="searchInput">
+                <select class="filter-select" id="typeFilter">
+                    <option value="">All Types</option>
+                    <option value="security">Security</option>
+                    <option value="access">Access</option>
+                    <option value="system">System</option>
+                    <option value="admin">Admin</option>
+                </select>
+                <select class="filter-select" id="severityFilter">
+                    <option value="">All Severity</option>
+                    <option value="critical">Critical</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                    <option value="info">Info</option>
+                </select>
+                <input type="date" class="filter-select" id="dateFilter">
+                <button class="btn" onclick="applyFilters()">🔍 Filter</button>
+            </div>
+        </div>
+
+        <!-- Live Log Stream -->
+        <div class="log-stream">
+            <div class="stream-header">
+                <h3 class="stream-title">Live Event Stream</h3>
+                <div class="auto-scroll-toggle">
+                    <span>Auto-scroll</span>
+                    <div class="toggle-switch active" id="autoScrollToggle" onclick="toggleAutoScroll()">
+                        <div class="toggle-slider"></div>
+                    </div>
+                    <div class="stream-status">
+                        <div class="status-dot"></div>
+                        <span>Live</span>
+                    </div>
+                </div>
+            </div>
+            <div id="logContainer">
+                <div class="log-entry info">
+                    <span class="log-message">Waiting for live events...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Event Details Table -->
+        <div class="events-section">
+            <div class="section-header">
+                <h3 class="section-title">Event Details</h3>
+                <span id="eventCount" class="text-muted">127 events today</span>
+            </div>
+            <table class="events-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Event Type</th>
+                        <th>Severity</th>
+                        <th>Source</th>
+                        <th>Message</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="eventsTable">
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 2rem; color: #94a3b8;">Loading events...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+        let autoScroll = true;
+        let eventCounter = 0;
+        
+        // Fetch real event logs from API
+        async function fetchEventLogs() {
+            try {
+                const response = await fetch('/api/v1/event-logs?limit=50');
+                const data = await response.json();
+                
+                const tbody = document.getElementById('eventsTable');
+                if (data.events && data.events.length > 0) {
+                    tbody.innerHTML = '';
+                    eventCounter = data.total;
+                    
+                    data.events.forEach(event => {
+                        const row = tbody.insertRow();
+                        const time = new Date(event.timestamp).toLocaleTimeString();
+                        const eventType = event.blocked ? 'security' : 'access';
+                        const severityClass = event.threat_level?.toLowerCase() || 'info';
+                        
+                        row.innerHTML = `
+                            <td>${time}</td>
+                            <td><span class="event-type ${eventType}">${event.threat_type}</span></td>
+                            <td><span class="severity-badge ${severityClass}">${event.threat_level || 'Info'}</span></td>
+                            <td>${event.ip || 'Unknown'}</td>
+                            <td>${event.action} - ${event.url || ''}</td>
+                            <td>
+                                <button class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">🔍 Details</button>
+                            </td>
+                        `;
+                    });
+                    
+                    // Update live stream with recent events
+                    updateLiveStream(data.events);
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: #94a3b8;">No events logged yet</td></tr>';
+                    document.getElementById('logContainer').innerHTML = '<div class="log-entry info"><span class="log-message">No events logged yet</span></div>';
+                }
+            } catch (error) {
+                console.error('Failed to fetch event logs:', error);
+            }
+        }
+        
+        // Initial load and periodic updates
+        fetchEventLogs();
+        setInterval(fetchEventLogs, 5000);
+        
+        // Update event counter display
+        setInterval(() => {
+            if (eventCounter > 0) {
+                document.querySelector('.section-title').textContent = `Recent Security Events (${eventCounter} total)`;
+            }
+        }, 1000);
+
+        // Auto-scroll toggle
+        function toggleAutoScroll() {
+            autoScroll = !autoScroll;
+            const toggle = document.getElementById('autoScrollToggle');
+            toggle.classList.toggle('active', autoScroll);
+        }
+
+        // Add real log entries from events
+        function updateLiveStream(events) {
+            const container = document.getElementById('logContainer');
+            
+            // Clear old content
+            container.innerHTML = '';
+            
+            // Add recent events to live stream (last 10)
+            const recentEvents = events.slice(0, 10);
+            if (recentEvents.length === 0) {
+                container.innerHTML = '<div class="log-entry info"><span class="log-message">No recent events</span></div>';
+                return;
+            }
+            
+            recentEvents.forEach(event => {
+                const time = new Date(event.timestamp).toLocaleTimeString();
+                const level = event.blocked ? 'error' : (event.threat_level === 'medium' ? 'warn' : 'info');
+                const type = event.blocked ? 'error' : (event.threat_level === 'medium' ? 'warning' : 'info');
+                
+                const logEntry = document.createElement('div');
+                logEntry.className = `log-entry ${type}`;
+                logEntry.innerHTML = `
+                    <span class="log-timestamp">${time}</span>
+                    <span class="log-level ${level}">${level.toUpperCase()}</span>
+                    <span class="log-message">${event.threat_type} ${event.blocked ? 'blocked' : 'detected'} from ${event.ip}</span>
+                `;
+                
+                container.appendChild(logEntry);
+            });
+            
+            // Auto-scroll if enabled
+            if (autoScroll) {
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+
+        // Filter functionality
+        function applyFilters() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const typeFilter = document.getElementById('typeFilter').value;
+            const severityFilter = document.getElementById('severityFilter').value;
+            const dateFilter = document.getElementById('dateFilter').value;
+            
+            const table = document.getElementById('eventsTable');
+            const rows = table.querySelectorAll('tr');
+            
+            rows.forEach(row => {
+                if (row.querySelector('th')) return; // Skip header
+                
+                const message = row.cells[4]?.textContent.toLowerCase() || '';
+                const type = row.querySelector('.event-type')?.textContent.toLowerCase() || '';
+                const severity = row.querySelector('.severity-badge')?.textContent.toLowerCase() || '';
+                
+                const matchesSearch = message.includes(searchTerm);
+                const matchesType = !typeFilter || type.includes(typeFilter);
+                const matchesSeverity = !severityFilter || severity.includes(severityFilter);
+                
+                if (matchesSearch && matchesType && matchesSeverity) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        // Export logs functionality
+        function exportLogs() {
+            alert('Logs will be exported as CSV file');
+        }
+
+        // Clear logs functionality
+        function clearLogs() {
+            if (confirm('Are you sure you want to clear all logs?')) {
+                document.getElementById('logContainer').innerHTML = '';
+                document.getElementById('eventsTable').innerHTML = `
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Event Type</th>
+                        <th>Severity</th>
+                        <th>Source</th>
+                        <th>Message</th>
+                        <th>Actions</th>
+                    </tr>
+                `;
+                eventCounter = 0;
+                document.getElementById('eventCount').textContent = '0 events today';
+            }
+        }
+
+        function generateRandomIP() {
+            return `${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`;
+        }
+
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', applyFilters);
+        document.getElementById('typeFilter').addEventListener('change', applyFilters);
+        document.getElementById('severityFilter').addEventListener('change', applyFilters);
+
+        // Initialize with current date
+        document.getElementById('dateFilter').valueAsDate = new Date();
+    </script>
+</body>
+</html>

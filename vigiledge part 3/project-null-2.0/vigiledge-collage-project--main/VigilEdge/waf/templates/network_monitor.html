@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Monitor - VigilEdge WAF</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-bg: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 30%, #16213e 60%, #0f3460 100%);
+            --glass-bg: rgba(255, 255, 255, 0.06);
+            --glass-border: rgba(100, 200, 255, 0.2);
+            --card-bg: rgba(30, 30, 50, 0.85);
+            --sidebar-bg: rgba(20, 25, 45, 0.95);
+            --cyber-blue: #00d4ff;
+            --cyber-teal: #00ffa6;
+            --cyber-purple: #7c3aed;
+            --text-primary: #ffffff;
+            --text-secondary: #e1e7f5;
+            --text-muted: #94a3b8;
+            --success: #00ff87;
+            --warning: #ffb347;
+            --danger: #ff6b6b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--primary-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 280px;
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--glass-border);
+            padding: 2rem 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .logo {
+            text-align: center;
+            padding: 0 1.5rem 2rem;
+            border-bottom: 1px solid var(--glass-border);
+            margin-bottom: 2rem;
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--cyber-blue), var(--cyber-teal));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 0 1rem;
+        }
+
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .nav-icon {
+            font-size: 1.2rem;
+            margin-right: 1rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            flex: 1;
+            padding: 2rem;
+            background: transparent;
+        }
+
+        .page-header {
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--cyber-blue), var(--cyber-teal));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .page-subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        /* Network Status Grid */
+        .network-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .network-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .network-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--cyber-blue), var(--cyber-teal));
+        }
+
+        .network-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .network-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .network-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.online {
+            background: var(--success);
+        }
+
+        .status-dot.warning {
+            background: var(--warning);
+        }
+
+        .status-dot.offline {
+            background: var(--danger);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .network-metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .metric {
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-label {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Connection Table */
+        .connections-section {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: between;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .refresh-btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-left: auto;
+        }
+
+        .refresh-btn:hover {
+            background: var(--cyber-blue);
+            color: var(--primary-bg);
+        }
+
+        .connections-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .connections-table th,
+        .connections-table td {
+            text-align: left;
+            padding: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .connections-table th {
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .connections-table td {
+            color: var(--text-secondary);
+        }
+
+        .connections-table tr:hover {
+            background: var(--glass-bg);
+        }
+
+        .connection-type {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .connection-type.websocket {
+            background: rgba(0, 212, 255, 0.2);
+            color: var(--cyber-blue);
+        }
+
+        .connection-type.http {
+            background: rgba(0, 255, 166, 0.2);
+            color: var(--cyber-teal);
+        }
+
+        .connection-type.https {
+            background: rgba(124, 58, 237, 0.2);
+            color: var(--cyber-purple);
+        }
+
+        /* Bandwidth Monitor */
+        .bandwidth-monitor {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .bandwidth-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+
+        .bandwidth-header {
+            margin-bottom: 1rem;
+        }
+
+        .bandwidth-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .bandwidth-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--cyber-blue);
+        }
+
+        .bandwidth-bar {
+            height: 8px;
+            background: var(--glass-bg);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        .bandwidth-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--cyber-blue), var(--cyber-teal));
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            animation: bandwidth-flow 2s ease-in-out infinite;
+        }
+
+        @keyframes bandwidth-flow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Geographic Map Placeholder */
+        .geo-map {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            text-align: center;
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .map-placeholder {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .network-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .bandwidth-monitor {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="logo">
+            <h1>🛡️ VigilEdge</h1>
+            <p>Security Operations</p>
+        </div>
+        
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="/" class="nav-link">
+                    <span class="nav-icon">📊</span>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/security-rules" class="nav-link">
+                    <span class="nav-icon">🛡️</span>
+                    <span>Security Rules</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/threat-detection" class="nav-link">
+                    <span class="nav-icon">🚨</span>
+                    <span>Threat Detection</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/analytics" class="nav-link">
+                    <span class="nav-icon">📈</span>
+                    <span>Analytics</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/network-monitor" class="nav-link active">
+                    <span class="nav-icon">🌐</span>
+                    <span>Network Monitor</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/blocked-ips" class="nav-link">
+                    <span class="nav-icon">🚫</span>
+                    <span>Blocked IPs</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/event-logs" class="nav-link">
+                    <span class="nav-icon">📋</span>
+                    <span>Event Logs</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/settings" class="nav-link">
+                    <span class="nav-icon">⚙️</span>
+                    <span>Settings</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">🌐 Network Monitor</h1>
+            <p class="page-subtitle">Real-time network traffic and connection monitoring</p>
+        </div>
+
+        <!-- Network Status Grid -->
+        <div class="network-grid">
+            <div class="network-card">
+                <div class="network-header">
+                    <h3 class="network-title">WAF Engine Status</h3>
+                    <div class="network-status">
+                        <div class="status-dot online"></div>
+                        <span>Online</span>
+                    </div>
+                </div>
+                <div class="network-metrics">
+                    <div class="metric">
+                        <div class="metric-value">99.9%</div>
+                        <div class="metric-label">Uptime</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">15ms</div>
+                        <div class="metric-label">Latency</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="network-card">
+                <div class="network-header">
+                    <h3 class="network-title">Database Connection</h3>
+                    <div class="network-status">
+                        <div class="status-dot online"></div>
+                        <span>Connected</span>
+                    </div>
+                </div>
+                <div class="network-metrics">
+                    <div class="metric">
+                        <div class="metric-value">47</div>
+                        <div class="metric-label">Pool Size</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">8ms</div>
+                        <div class="metric-label">Query Time</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="network-card">
+                <div class="network-header">
+                    <h3 class="network-title">Redis Cache</h3>
+                    <div class="network-status">
+                        <div class="status-dot online"></div>
+                        <span>Active</span>
+                    </div>
+                </div>
+                <div class="network-metrics">
+                    <div class="metric">
+                        <div class="metric-value">2.1GB</div>
+                        <div class="metric-label">Memory</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1,247</div>
+                        <div class="metric-label">Keys</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="network-card">
+                <div class="network-header">
+                    <h3 class="network-title">Load Balancer</h3>
+                    <div class="network-status">
+                        <div class="status-dot warning"></div>
+                        <span>High Load</span>
+                    </div>
+                </div>
+                <div class="network-metrics">
+                    <div class="metric">
+                        <div class="metric-value">78%</div>
+                        <div class="metric-label">CPU Usage</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">3</div>
+                        <div class="metric-label">Instances</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Connections -->
+        <div class="connections-section">
+            <div class="section-header">
+                <h3 class="section-title">Active Connections</h3>
+                <button class="refresh-btn" onclick="refreshConnections()">🔄 Refresh</button>
+            </div>
+            <table class="connections-table">
+                <thead>
+                    <tr>
+                        <th>Client IP</th>
+                        <th>Connection Type</th>
+                        <th>Duration</th>
+                        <th>Data Transferred</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="connectionsTable">
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 2rem; color: #94a3b8;">Loading connections...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Bandwidth Monitor -->
+        <div class="bandwidth-monitor">
+            <div class="bandwidth-card">
+                <div class="bandwidth-header">
+                    <h3 class="bandwidth-title">Incoming Traffic</h3>
+                    <div class="bandwidth-value" id="incomingBandwidth">125.4 Mbps</div>
+                </div>
+                <div class="bandwidth-bar">
+                    <div class="bandwidth-fill" id="incomingBar" style="width: 65%;"></div>
+                </div>
+            </div>
+
+            <div class="bandwidth-card">
+                <div class="bandwidth-header">
+                    <h3 class="bandwidth-title">Outgoing Traffic</h3>
+                    <div class="bandwidth-value" id="outgoingBandwidth">98.7 Mbps</div>
+                </div>
+                <div class="bandwidth-bar">
+                    <div class="bandwidth-fill" id="outgoingBar" style="width: 45%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Geographic Map Placeholder -->
+        <div class="geo-map">
+            <div class="map-placeholder">🗺️</div>
+            <h3>Geographic Connection Map</h3>
+            <p>Real-time visualization of global connections</p>
+            <p style="color: var(--text-muted); margin-top: 1rem;">Feature coming soon - Integration with mapping services</p>
+        </div>
+    </main>
+
+    <script>
+        // Simulate real-time updates
+        setInterval(() => {
+            updateBandwidthMetrics();
+            updateConnectionTable();
+        }, 3000);
+
+        function updateBandwidthMetrics() {
+            // Update incoming bandwidth
+            const incoming = 100 + Math.random() * 50;
+            const outgoing = 80 + Math.random() * 40;
+            
+            document.getElementById('incomingBandwidth').textContent = `${incoming.toFixed(1)} Mbps`;
+            document.getElementById('outgoingBandwidth').textContent = `${outgoing.toFixed(1)} Mbps`;
+            
+            // Update bandwidth bars
+            document.getElementById('incomingBar').style.width = `${(incoming / 200) * 100}%`;
+            document.getElementById('outgoingBar').style.width = `${(outgoing / 200) * 100}%`;
+        }
+
+        function updateConnectionTable() {
+            const table = document.getElementById('connectionsTable');
+            const rows = table.querySelectorAll('tr');
+            
+            // Update duration for each connection
+            rows.forEach((row, index) => {
+                if (index === 0) return; // Skip header
+                
+                const durationCell = row.cells[2];
+                const currentDuration = durationCell.textContent;
+                const parts = currentDuration.split(':');
+                let totalSeconds = parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseInt(parts[2]);
+                totalSeconds += Math.floor(Math.random() * 5) + 1; // Add 1-5 seconds
+                
+                const hours = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
+                const minutes = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+                const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+                
+                durationCell.textContent = `${hours}:${minutes}:${seconds}`;
+                
+                // Update data transferred
+                const dataCell = row.cells[3];
+                const currentData = parseFloat(dataCell.textContent);
+                const newData = currentData + (Math.random() * 0.1);
+                const unit = dataCell.textContent.includes('MB') ? 'MB' : 'KB';
+                dataCell.textContent = `${newData.toFixed(1)} ${unit}`;
+            });
+        }
+
+        function refreshConnections() {
+            // Add new connection occasionally
+            if (Math.random() < 0.5) {
+                addNewConnection();
+            }
+            
+            // Visual feedback
+            const btn = document.querySelector('.refresh-btn');
+            btn.style.transform = 'rotate(360deg)';
+            setTimeout(() => {
+                btn.style.transform = 'rotate(0deg)';
+            }, 500);
+        }
+
+        function addNewConnection() {
+            const table = document.getElementById('connectionsTable');
+            const connectionTypes = [
+                { type: 'websocket', class: 'websocket' },
+                { type: 'HTTPS', class: 'https' },
+                { type: 'HTTP', class: 'http' }
+            ];
+            
+            const connection = connectionTypes[Math.floor(Math.random() * connectionTypes.length)];
+            const ip = generateRandomIP();
+            
+            const row = table.insertRow(1); // Insert after header
+            row.innerHTML = `
+                <td>${ip}</td>
+                <td><span class="connection-type ${connection.class}">${connection.type}</span></td>
+                <td>00:00:01</td>
+                <td>0.1 KB</td>
+                <td>🟢 Active</td>
+                <td>🔍 Monitor</td>
+            `;
+            
+            // Remove old connections if more than 8
+            if (table.rows.length > 9) {
+                table.deleteRow(table.rows.length - 1);
+            }
+        }
+
+        // Fetch real network connections from API
+        async function fetchConnections() {
+            try {
+                const response = await fetch('/api/v1/network-connections');
+                const data = await response.json();
+                
+                const tbody = document.getElementById('connectionsTable');
+                if (data.connections && data.connections.length > 0) {
+                    tbody.innerHTML = '';
+                    data.connections.forEach(conn => {
+                        const row = tbody.insertRow();
+                        const timeAgo = getRelativeTime(conn.last_seen);
+                        const statusIcon = conn.status === 'blocked' ? '🔴' : '🟢';
+                        const statusText = conn.status === 'blocked' ? 'Blocked' : 'Active';
+                        
+                        row.innerHTML = `
+                            <td>${conn.ip}</td>
+                            <td><span class="connection-type http">${conn.connection_type}</span></td>
+                            <td>${timeAgo}</td>
+                            <td>${conn.request_count} requests</td>
+                            <td>${statusIcon} ${statusText}</td>
+                            <td>🔍 Monitor</td>
+                        `;
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: #94a3b8;">No active connections in last 5 minutes</td></tr>';
+                }
+            } catch (error) {
+                console.error('Failed to fetch connections:', error);
+            }
+        }
+        
+        // Calculate relative time
+        function getRelativeTime(timestamp) {
+            const now = new Date();
+            const past = new Date(timestamp);
+            const diffMs = now - past;
+            const diffSec = Math.floor(diffMs / 1000);
+            const diffMin = Math.floor(diffSec / 60);
+            
+            if (diffSec < 60) return `${diffSec}s ago`;
+            if (diffMin < 60) return `${diffMin}m ago`;
+            return `${Math.floor(diffMin / 60)}h ago`;
+        }
+
+        // Initial load and periodic updates
+        fetchConnections();
+        setInterval(fetchConnections, 5000);
+        updateBandwidthMetrics();
+    </script>
+</body>
+</html>
